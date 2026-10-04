@@ -16,13 +16,8 @@
   --text:#e6edf3;--muted:#8b98a8;--accent:#3ddc97;--blue:#4aa8ff;
   --warn:#ffb454;--danger:#ff6b6b;
 }
-html{height:100%}
+html,body{height:100%;overflow:hidden}
 body{
-  height:100vh;
-  height:100dvh;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
   background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   font-size:15px;line-height:1.45;
@@ -30,39 +25,183 @@ body{
 }
 input,button,select{font:inherit;color:inherit}
 
+/* ===== APP LAYOUT ===== */
+.app{
+  display:flex;
+  height:100vh;
+  height:100dvh;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  position:fixed;
+  top:0;left:0;bottom:0;
+  width:270px;
+  background:#141a22;
+  border-right:1px solid var(--line);
+  z-index:100;
+  transform:translateX(-100%);
+  transition:transform .25s ease;
+  display:flex;
+  flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:4px 0 30px rgba(0,0,0,.5);
+}
+.sidebar.open{transform:translateX(0)}
+.sidebar-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:18px 18px 16px;
+  border-bottom:1px solid var(--line);
+  flex-shrink:0;
+}
+.sidebar-head .logo{font-size:26px}
+.sidebar-head h1{font-size:17px;font-weight:700}
+.sidebar-head .sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.sidebar-nav{
+  flex:1 1 auto;
+  overflow-y:auto;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.sidebar-nav button{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  padding:13px 16px;
+  border-radius:11px;
+  font-size:14.5px;
+  font-weight:600;
+  cursor:pointer;
+  text-align:left;
+  transition:.15s;
+  font-family:inherit;
+}
+.sidebar-nav button:hover{background:var(--card2);color:var(--text)}
+.sidebar-nav button.active{background:rgba(61,220,151,.12);color:var(--accent)}
+.sidebar-nav button .ic{font-size:20px;width:24px;text-align:center;flex-shrink:0}
+.sidebar-nav button .lbl{flex:1}
+
+.sidebar-foot{
+  flex-shrink:0;
+  padding:14px 18px;
+  border-top:1px solid var(--line);
+  font-size:11.5px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+#sync-status{
+  font-weight:700;
+  font-size:11px;
+  padding:3px 10px;
+  border-radius:99px;
+  background:var(--card2);
+  transition:.2s;
+}
+#sync-status.ok{color:var(--accent);background:rgba(61,220,151,.12)}
+#sync-status.syncing{color:var(--warn);background:rgba(255,180,84,.12)}
+#sync-status.error{color:var(--danger);background:rgba(255,107,107,.12)}
+
+.sidebar-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;
+  transition:opacity .25s;
+  z-index:99;
+  backdrop-filter:blur(2px);
+}
+.sidebar-overlay.open{opacity:1;pointer-events:auto}
+
+/* ===== CONTENT ===== */
+.app-content{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  height:100%;
+  overflow:hidden;
+}
+
 .topbar{
-  flex-shrink:0;z-index:40;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  padding-top:calc(10px + env(safe-area-inset-top));
   background:rgba(14,17,22,.98);
   border-bottom:1px solid var(--line);
-  padding:12px 16px;
-  padding-top:calc(12px + env(safe-area-inset-top));
+  z-index:40;
 }
-.brand{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.brand span.logo{font-size:22px}
-.brand h1{font-size:16px;font-weight:700}
-.date-nav{display:flex;gap:8px;align-items:center}
+.menu-btn{
+  background:var(--card2);
+  border:1px solid var(--line);
+  color:var(--text);
+  width:42px;height:42px;
+  border-radius:11px;
+  cursor:pointer;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  transition:.15s;
+}
+.menu-btn:hover{background:#2a3441;border-color:var(--accent);color:var(--accent)}
+.date-nav{display:flex;gap:6px;align-items:center;flex:1;min-width:0}
 .date-nav button{
-  background:var(--card2);border:1px solid var(--line);color:var(--text);
-  width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:18px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:var(--card2);
+  border:1px solid var(--line);
+  color:var(--text);
+  width:38px;height:38px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  transition:.15s;
 }
+.date-nav button:hover{border-color:var(--accent);color:var(--accent)}
 .date-nav input[type=date]{
-  flex:1;min-width:0;background:var(--card2);border:1px solid var(--line);
-  color:var(--text);padding:9px 12px;border-radius:10px;
-  font-size:14px;text-align:center;
+  flex:1;min-width:0;
+  background:var(--card2);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:9px 10px;
+  border-radius:10px;
+  font-size:13.5px;
+  text-align:center;
+  font-family:inherit;
 }
 
 main{
   flex:1 1 auto;
+  min-height:0;
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
   padding:14px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom) + 40px);
 }
 .view{display:none}
-.view.active{display:block;max-width:600px;margin:0 auto}
+.view.active{display:block;max-width:640px;margin:0 auto}
 
+/* ===== HERO ===== */
 .hero{
   background:var(--card);border:1px solid var(--line);
   border-radius:16px;padding:18px;margin-bottom:16px;transition:.2s;
@@ -87,6 +226,7 @@ main{
 .muted{color:var(--muted);font-size:13px}
 .mb{margin-bottom:12px}
 
+/* ===== LOG LIST ===== */
 .log-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
 .log-item{
   background:var(--card);border:1px solid var(--line);border-radius:12px;
@@ -97,7 +237,7 @@ main{
 .li-makro{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .li-makro b{color:var(--accent)}
 .li-gram-wrap{display:flex;align-items:center;gap:3px;flex-shrink:0}
-.li-gram{width:64px;background:var(--card2);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:8px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.li-gram{width:64px;background:var(--card2);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:8px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;font-family:inherit}
 .li-gram-wrap small{font-size:11px;color:var(--muted)}
 .li-gram-empty{font-size:11px;color:var(--muted);font-style:italic}
 .li-del{
@@ -107,25 +247,28 @@ main{
 }
 .li-del:hover{background:rgba(255,107,107,.15);color:var(--danger)}
 
+/* ===== BUTTONS ===== */
 .btn-add{
   width:100%;background:var(--accent);color:#08130d;border:none;
   padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:inherit;
 }
 .btn-add:active{transform:scale(.98)}
 .btn-primary{
   background:var(--accent);color:#08130d;border:none;
   padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer;
+  font-family:inherit;
 }
 .btn-primary.btn-block{width:100%;padding:14px}
 .btn-ghost{
   background:var(--card2);color:var(--text);border:1px solid var(--line);
   padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer;
-  width:100%;margin-bottom:8px;text-align:left;
+  width:100%;margin-bottom:8px;text-align:left;font-family:inherit;
 }
 .btn-danger{
   background:transparent;color:var(--danger);border:1px solid rgba(255,107,107,.4);
   padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer;
-  width:100%;text-align:left;
+  width:100%;text-align:left;font-family:inherit;
 }
 
 .empty{
@@ -134,11 +277,12 @@ main{
   border-radius:12px;
 }
 
+/* ===== RIWAYAT ===== */
 .riwayat-list{display:flex;flex-direction:column;gap:8px}
 .riwayat-item{
   background:var(--card);border:1px solid var(--line);border-radius:12px;
   padding:12px 14px;display:flex;justify-content:space-between;align-items:center;
-  gap:10px;text-align:left;cursor:pointer;width:100%;
+  gap:10px;text-align:left;cursor:pointer;width:100%;font-family:inherit;color:var(--text);
 }
 .riwayat-item:hover{border-color:var(--accent)}
 .ri-nama{font-weight:600;font-size:14px;margin-bottom:2px}
@@ -150,12 +294,13 @@ main{
 .ri-sisa.warn b{color:var(--warn)}
 .ri-sisa.over b{color:var(--danger)}
 
+/* ===== BAHAN ===== */
 .bahan-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .bahan-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
 .bahan-nama{
   width:100%;background:transparent;border:none;color:var(--text);
   font-size:14.5px;font-weight:600;padding:4px 0;margin-bottom:6px;
-  border-bottom:1px solid transparent;
+  border-bottom:1px solid transparent;font-family:inherit;
 }
 .bahan-nama:focus{outline:none;border-bottom-color:var(--accent)}
 .bahan-makro{display:grid;grid-template-columns:repeat(4,1fr) 32px;gap:6px;align-items:end}
@@ -163,7 +308,7 @@ main{
 .bahan-makro input{
   background:var(--card2);border:1px solid var(--line);color:var(--text);
   padding:6px 8px;border-radius:7px;font-size:13px;text-align:right;
-  font-variant-numeric:tabular-nums;width:100%;
+  font-variant-numeric:tabular-nums;width:100%;font-family:inherit;
 }
 .bahan-makro input:focus{outline:none;border-color:var(--accent)}
 .bahan-del{
@@ -179,29 +324,14 @@ main{
   flex:1;background:var(--card2);border:1px solid var(--line);
   color:var(--text);padding:12px 14px;border-radius:10px;
   font-size:22px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;
+  font-family:inherit;
 }
 .target-row span{font-size:14px;color:var(--muted);font-weight:600}
 
-.bottom-nav{
-  flex-shrink:0;z-index:30;
-  background:rgba(14,17,22,.98);
-  border-top:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(4,1fr);
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-}
-.bottom-nav button{
-  background:transparent;border:none;color:var(--muted);
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:8px 4px;cursor:pointer;font-size:18px;
-  border-radius:10px;transition:.15s;
-}
-.bottom-nav button span{font-size:10.5px;font-weight:600}
-.bottom-nav button.active{color:var(--accent);background:rgba(61,220,151,.08)}
-
+/* ===== SHEET ===== */
 .sheet-backdrop{
-  position:fixed;
-  top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.7);
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.75);
   opacity:0;pointer-events:none;visibility:hidden;
   transition:opacity .2s,visibility 0s .2s;
   z-index:9999;
@@ -227,12 +357,13 @@ main{
 .sheet-tabs button{
   background:transparent;border:none;color:var(--muted);
   padding:8px 14px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;
+  font-family:inherit;
 }
 .sheet-tabs button.active{background:var(--card2);color:var(--accent)}
 .sheet-close{background:var(--card2);border:none;color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0}
 .sheet-body{
   padding:14px;
-  padding-bottom:calc(14px + env(safe-area-inset-bottom) + 40px);
+  padding-bottom:calc(14px + env(safe-area-inset-bottom) + 60px);
   overflow-y:auto;
   overflow-x:hidden;
   flex:1 1 auto;
@@ -245,7 +376,7 @@ main{
 .search-input{
   width:100%;background:var(--card2);border:1px solid var(--line);
   color:var(--text);padding:12px 14px;border-radius:10px;
-  font-size:14.5px;margin-bottom:12px;
+  font-size:14.5px;margin-bottom:12px;font-family:inherit;
 }
 .search-input:focus{outline:none;border-color:var(--accent)}
 
@@ -254,6 +385,7 @@ main{
   background:var(--card);border:1px solid var(--line);color:var(--text);
   padding:12px 14px;border-radius:11px;text-align:left;cursor:pointer;
   display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-family:inherit;
 }
 .pick-item:hover{border-color:var(--accent)}
 .pi-nama{font-size:14px;font-weight:600;flex:1}
@@ -263,7 +395,7 @@ main{
 .form label{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:8px}
 .form input{
   background:var(--card2);border:1px solid var(--line);color:var(--text);
-  padding:11px 13px;border-radius:10px;font-size:14.5px;width:100%;
+  padding:11px 13px;border-radius:10px;font-size:14.5px;width:100%;font-family:inherit;
 }
 .form input:focus{outline:none;border-color:var(--accent)}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -281,32 +413,59 @@ main{
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand">
-    <span class="logo">🍽️</span>
-    <h1>Tracker Makan</h1>
-    <span id="sync-status" style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:600"></span>
-  </div>
-  <div class="date-nav">
-    <button id="prev-day">‹</button>
-    <input type="date" id="date-picker">
-    <button id="next-day">›</button>
-  </div>
-</header>
+<div class="app">
 
-<main>
-  <section id="view-hari" class="view active"></section>
-  <section id="view-riwayat" class="view"></section>
-  <section id="view-bahan" class="view"></section>
-  <section id="view-setting" class="view"></section>
-</main>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span class="logo">🍽️</span>
+      <div>
+        <h1>Tracker Makan</h1>
+        <div class="sub">Asupan harian & target kalori</div>
+      </div>
+    </div>
 
-<nav class="bottom-nav">
-  <button data-view="hari" class="active">📅<span>Hari Ini</span></button>
-  <button data-view="riwayat">📊<span>Riwayat</span></button>
-  <button data-view="bahan">🥗<span>Bahan</span></button>
-  <button data-view="setting">⚙️<span>Setting</span></button>
-</nav>
+    <nav class="sidebar-nav">
+      <button data-view="hari" class="active">
+        <span class="ic">📅</span><span class="lbl">Hari Ini</span>
+      </button>
+      <button data-view="riwayat">
+        <span class="ic">📊</span><span class="lbl">Riwayat</span>
+      </button>
+      <button data-view="bahan">
+        <span class="ic">🥗</span><span class="lbl">Basis Bahan</span>
+      </button>
+      <button data-view="setting">
+        <span class="ic">⚙️</span><span class="lbl">Setting</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span id="sync-status">memuat...</span>
+      <span style="margin-left:auto">v2.0</span>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="app-content">
+    <header class="topbar">
+      <button class="menu-btn" id="menu-btn" title="Menu">☰</button>
+      <div class="date-nav">
+        <button id="prev-day">‹</button>
+        <input type="date" id="date-picker">
+        <button id="next-day">›</button>
+      </div>
+    </header>
+
+    <main id="main-scroll">
+      <section id="view-hari" class="view active"></section>
+      <section id="view-riwayat" class="view"></section>
+      <section id="view-bahan" class="view"></section>
+      <section id="view-setting" class="view"></section>
+    </main>
+  </div>
+
+</div>
 
 <div id="sheet" class="sheet-backdrop">
   <div class="sheet">
@@ -371,14 +530,12 @@ function defaultState(){
 }
 
 var state = defaultState();
-var syncStatus = 'idle';
 
 function setSyncStatus(s){
-  syncStatus = s;
   var el = document.getElementById('sync-status');
   if(!el) return;
-  el.textContent = s==='ok' ? 'tersinkron' : s==='syncing' ? 'sync...' : s==='error' ? 'gagal sync' : '';
-  el.style.color = s==='ok' ? 'var(--accent)' : s==='error' ? 'var(--danger)' : 'var(--muted)';
+  el.textContent = s==='ok' ? 'tersinkron' : s==='syncing' ? 'sync...' : s==='error' ? 'gagal sync' : 'memuat...';
+  el.className = s==='ok' ? 'ok' : s==='syncing' ? 'syncing' : s==='error' ? 'error' : '';
 }
 
 function loadLocal(){
@@ -647,18 +804,23 @@ function closeSheet(){
   document.getElementById('sheet').classList.remove('open');
 }
 
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+function toggleSidebar(){ document.getElementById('sidebar').classList.contains('open') ? closeSidebar() : openSidebar(); }
+
 function switchView(view){
   currentView = view;
   var views = document.querySelectorAll('.view');
   for(var i=0;i<views.length;i++) views[i].classList.toggle('active', views[i].id==='view-'+view);
-  var btns = document.querySelectorAll('.bottom-nav button');
+  var btns = document.querySelectorAll('.sidebar-nav button');
   for(var j=0;j<btns.length;j++) btns[j].classList.toggle('active', btns[j].dataset.view===view);
   if(view==='hari') renderHari();
   else if(view==='riwayat') renderRiwayat();
   else if(view==='bahan') renderBahan();
   else if(view==='setting') renderSetting();
-  var mainEl = document.querySelector('main');
-  if(mainEl) mainEl.scrollTop = 0;
+  var m = document.getElementById('main-scroll');
+  if(m) m.scrollTop = 0;
+  closeSidebar();
 }
 
 function toast(msg){
@@ -679,7 +841,10 @@ function tambahKeHari(item){
 document.addEventListener('click', function(e){
   var t = e.target;
 
-  var nav = t.closest('.bottom-nav button[data-view]');
+  if(t.id==='menu-btn'){ toggleSidebar(); return; }
+  if(t.id==='sidebar-overlay'){ closeSidebar(); return; }
+
+  var nav = t.closest('.sidebar-nav button[data-view]');
   if(nav){ switchView(nav.dataset.view); return; }
 
   if(t.id==='prev-day'){
