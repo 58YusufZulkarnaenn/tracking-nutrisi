@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Tracker Makan</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -27,7 +30,7 @@ input,button,select{font:inherit;color:inherit}
   border-bottom:1px solid var(--line);padding:12px 16px;
 }
 .brand{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.brand span{font-size:22px}
+.brand span.logo{font-size:22px}
 .brand h1{font-size:16px;font-weight:700}
 .date-nav{display:flex;gap:8px;align-items:center}
 .date-nav button{
@@ -246,8 +249,9 @@ main{padding:14px;max-width:600px;margin:0 auto}
 
 <header class="topbar">
   <div class="brand">
-    <span>🍽️</span>
+    <span class="logo">🍽️</span>
     <h1>Tracker Makan</h1>
+    <span id="sync-status" style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:600"></span>
   </div>
   <div class="date-nav">
     <button id="prev-day">‹</button>
@@ -290,7 +294,10 @@ main{padding:14px;max-width:600px;margin:0 auto}
 (function(){
 'use strict';
 
+var API_URL = 'https://tracking-nutrisi.pages.dev';
+var API_SECRET = 'makananharian';
 var KEY = 'trackerMakanV1';
+
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function round1(v){ return Math.round((Number(v)||0)*10)/10; }
 function fmt(v){ return round1(v).toLocaleString('id-ID',{maximumFractionDigits:1}); }
@@ -329,8 +336,18 @@ function defaultState(){
   return {target:1800, bahan:defaultBahan.slice(), log:{}};
 }
 
-var state = load();
-function load(){
+var state = defaultState();
+var syncStatus = 'idle';
+
+function setSyncStatus(s){
+  syncStatus = s;
+  var el = document.getElementById('sync-status');
+  if(!el) return;
+  el.textContent = s==='ok' ? 'tersinkron' : s==='syncing' ? 'sync...' : s==='error' ? 'gagal sync' : '';
+  el.style.color = s==='ok' ? 'var(--accent)' : s==='error' ? 'var(--danger)' : 'var(--muted)';
+}
+
+function loadLocal(){
   try{
     var raw = localStorage.getItem(KEY);
     if(raw){
@@ -338,14 +355,41 @@ function load(){
       if(s && s.bahan && s.log && typeof s.target === 'number') return s;
     }
   }catch(e){}
-  return defaultState();
+  return null;
 }
+
+async function loadFromCloud(){
+  try{
+    var res = await fetch(API_URL + '/api/load', { headers: { 'X-Secret': API_SECRET } });
+    if(!res.ok) return null;
+    var data = await res.json();
+    if(data && data.bahan && data.log && typeof data.target === 'number') return data;
+  }catch(e){}
+  return null;
+}
+
+async function pushToCloud(){
+  setSyncStatus('syncing');
+  try{
+    var res = await fetch(API_URL + '/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Secret': API_SECRET },
+      body: JSON.stringify(state)
+    });
+    setSyncStatus(res.ok ? 'ok' : 'error');
+  }catch(e){
+    setSyncStatus('error');
+  }
+}
+
 var saveTimer;
 function save(){
   clearTimeout(saveTimer);
+  state.lastModified = Date.now();
   saveTimer = setTimeout(function(){
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
-  },200);
+    pushToCloud();
+  }, 600);
 }
 
 function todayISO(){
@@ -526,7 +570,7 @@ function renderSetting(){
   html += '</div>';
   html += '<div class="card">';
   html += '<div class="section-title">Data</div>';
-  html += '<div class="muted mb">Data kesimpen otomatis di browser ini (localStorage). Backup rutin biar aman.</div>';
+  html += '<div class="muted mb">Data kesimpen otomatis di cloud + browser ini. Semua device bakal sinkron.</div>';
   html += '<button class="btn-ghost" id="btn-export">Export Backup (JSON)</button>';
   html += '<button class="btn-ghost" id="btn-import">Import Backup</button>';
   html += '<button class="btn-danger" id="btn-reset">Reset Semua Data</button>';
@@ -534,7 +578,7 @@ function renderSetting(){
   html += '</div>';
   html += '<div class="card">';
   html += '<div class="section-title">Info</div>';
-  html += '<div class="muted">Total bahan: '+state.bahan.length+'<br>Total hari tercatat: '+jmlHari+'<br>Penyimpanan: browser (localStorage)</div>';
+  html += '<div class="muted">Total bahan: '+state.bahan.length+'<br>Total hari tercatat: '+jmlHari+'<br>Penyimpanan: Cloudflare KV + localStorage</div>';
   html += '</div>';
   el.innerHTML = html;
 }
@@ -846,8 +890,41 @@ function updateHero(){
   }
 }
 
-document.getElementById('date-picker').value = currentDate;
-renderHari();
+async function initApp(){
+  var local = loadLocal();
+  var cloud = await loadFromCloud();
+
+  if(cloud && local){
+    state = (cloud.lastModified||0) >= (local.lastModified||0) ? cloud : local;
+  } else if(cloud){
+    state = cloud;
+  } else if(local){
+    state = local;
+    pushToCloud();
+  } else {
+    state = defaultState();
+    pushToCloud();
+  }
+
+  document.getElementById('date-picker').value = currentDate;
+  renderHari();
+  setSyncStatus(cloud ? 'ok' : 'syncing');
+}
+
+window.addEventListener('beforeunload', function(){
+  if(saveTimer){
+    clearTimeout(saveTimer);
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+  }
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+  });
+}
+
+initApp();
 
 })();
 </script>
