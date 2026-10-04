@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<title>Tracker Makan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0e1116;--card:#171d26;--card2:#1f2733;--line:#2b3543;
+  --text:#e6edf3;--muted:#8b98a8;--accent:#3ddc97;--blue:#4aa8ff;
+  --warn:#ffb454;--danger:#ff6b6b;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.45;padding-bottom:80px;
+  -webkit-font-smoothing:antialiased;
+}
+input,button,select{font:inherit;color:inherit}
+
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:rgba(14,17,22,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:12px 16px;
+}
+.brand{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.brand span{font-size:22px}
+.brand h1{font-size:16px;font-weight:700}
+.date-nav{display:flex;gap:8px;align-items:center}
+.date-nav button{
+  background:var(--card2);border:1px solid var(--line);color:var(--text);
+  width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+}
+.date-nav input[type=date]{
+  flex:1;background:var(--card2);border:1px solid var(--line);
+  color:var(--text);padding:9px 12px;border-radius:10px;
+  font-size:14px;text-align:center;
+}
+
+main{padding:14px;max-width:600px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+
+.hero{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:18px;margin-bottom:16px;transition:.2s;
+}
+.hero.warn{border-color:rgba(255,180,84,.4)}
+.hero.over{border-color:rgba(255,107,107,.5)}
+.hero-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.hero-angka{display:flex;align-items:baseline;gap:6px;margin:6px 0 14px}
+.hero-angka span{font-size:44px;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.hero.ok .hero-angka span{color:var(--accent)}
+.hero.warn .hero-angka span{color:var(--warn)}
+.hero.over .hero-angka span{color:var(--danger)}
+.hero-angka small{font-size:14px;color:var(--muted);font-weight:600}
+.hero-bar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin-bottom:14px}
+.hero-bar>div{height:100%;border-radius:99px;transition:width .3s}
+.hero-stat{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.hero-stat>div{display:flex;flex-direction:column}
+.hero-stat small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:2px}
+.hero-stat b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.muted{color:var(--muted);font-size:13px}
+.mb{margin-bottom:12px}
+
+.log-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.log-item{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:12px;display:flex;gap:10px;align-items:center;
+}
+.li-info{flex:1;min-width:0}
+.li-nama{font-weight:600;font-size:14.5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li-makro{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.li-makro b{color:var(--accent)}
+.li-gram-wrap{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.li-gram{width:64px;background:var(--card2);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:8px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.li-gram-wrap small{font-size:11px;color:var(--muted)}
+.li-gram-empty{font-size:11px;color:var(--muted);font-style:italic}
+.li-del{
+  background:transparent;border:none;color:var(--muted);cursor:pointer;
+  width:30px;height:30px;border-radius:8px;font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.li-del:hover{background:rgba(255,107,107,.15);color:var(--danger)}
+
+.btn-add{
+  width:100%;background:var(--accent);color:#08130d;border:none;
+  padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+}
+.btn-add:active{transform:scale(.98)}
+.btn-primary{
+  background:var(--accent);color:#08130d;border:none;
+  padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer;
+}
+.btn-primary.btn-block{width:100%;padding:14px}
+.btn-ghost{
+  background:var(--card2);color:var(--text);border:1px solid var(--line);
+  padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer;
+  width:100%;margin-bottom:8px;text-align:left;
+}
+.btn-danger{
+  background:transparent;color:var(--danger);border:1px solid rgba(255,107,107,.4);
+  padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer;
+  width:100%;text-align:left;
+}
+
+.empty{
+  text-align:center;padding:30px 16px;color:var(--muted);
+  font-size:13.5px;background:var(--card);border:1px dashed var(--line);
+  border-radius:12px;
+}
+
+.riwayat-list{display:flex;flex-direction:column;gap:8px}
+.riwayat-item{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;display:flex;justify-content:space-between;align-items:center;
+  gap:10px;text-align:left;cursor:pointer;width:100%;
+}
+.riwayat-item:hover{border-color:var(--accent)}
+.ri-nama{font-weight:600;font-size:14px;margin-bottom:2px}
+.ri-sub{font-size:11.5px;color:var(--muted)}
+.ri-sisa{text-align:right;flex-shrink:0}
+.ri-sisa b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.ri-sisa small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.ri-sisa.ok b{color:var(--accent)}
+.ri-sisa.warn b{color:var(--warn)}
+.ri-sisa.over b{color:var(--danger)}
+
+.bahan-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.bahan-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.bahan-nama{
+  width:100%;background:transparent;border:none;color:var(--text);
+  font-size:14.5px;font-weight:600;padding:4px 0;margin-bottom:6px;
+  border-bottom:1px solid transparent;
+}
+.bahan-nama:focus{outline:none;border-bottom-color:var(--accent)}
+.bahan-makro{display:grid;grid-template-columns:repeat(4,1fr) 32px;gap:6px;align-items:end}
+.bahan-makro label{display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.bahan-makro input{
+  background:var(--card2);border:1px solid var(--line);color:var(--text);
+  padding:6px 8px;border-radius:7px;font-size:13px;text-align:right;
+  font-variant-numeric:tabular-nums;width:100%;
+}
+.bahan-makro input:focus{outline:none;border-color:var(--accent)}
+.bahan-del{
+  background:transparent;border:none;color:var(--muted);
+  width:32px;height:32px;border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.bahan-del:hover{background:rgba(255,107,107,.15);color:var(--danger)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.target-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.target-row input{
+  flex:1;background:var(--card2);border:1px solid var(--line);
+  color:var(--text);padding:12px 14px;border-radius:10px;
+  font-size:22px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;
+}
+.target-row span{font-size:14px;color:var(--muted);font-weight:600}
+
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(14,17,22,.96);backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:30;
+}
+.bottom-nav button{
+  background:transparent;border:none;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 4px;cursor:pointer;font-size:18px;
+  border-radius:10px;transition:.15s;
+}
+.bottom-nav button span{font-size:10.5px;font-weight:600}
+.bottom-nav button.active{color:var(--accent);background:rgba(61,220,151,.08)}
+
+.sheet-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;transition:.2s;z-index:100;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.sheet-backdrop.open{opacity:1;pointer-events:auto}
+.sheet{
+  background:var(--bg);width:100%;max-width:600px;
+  max-height:85vh;border-radius:20px 20px 0 0;
+  display:flex;flex-direction:column;
+  transform:translateY(30px);transition:.25s;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.sheet-backdrop.open .sheet{transform:translateY(0)}
+.sheet-handle{width:40px;height:4px;background:var(--line);border-radius:99px;margin:8px auto 0}
+.sheet-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.sheet-tabs{display:flex;gap:4px;flex:1}
+.sheet-tabs button{
+  background:transparent;border:none;color:var(--muted);
+  padding:8px 14px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;
+}
+.sheet-tabs button.active{background:var(--card2);color:var(--accent)}
+.sheet-close{background:var(--card2);border:none;color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:14px}
+.sheet-body{padding:14px;overflow-y:auto;flex:1}
+
+.search-input{
+  width:100%;background:var(--card2);border:1px solid var(--line);
+  color:var(--text);padding:12px 14px;border-radius:10px;
+  font-size:14.5px;margin-bottom:12px;
+}
+.search-input:focus{outline:none;border-color:var(--accent)}
+
+.pick-list{display:flex;flex-direction:column;gap:6px}
+.pick-item{
+  background:var(--card);border:1px solid var(--line);color:var(--text);
+  padding:12px 14px;border-radius:11px;text-align:left;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+}
+.pick-item:hover{border-color:var(--accent)}
+.pi-nama{font-size:14px;font-weight:600;flex:1}
+.pi-info{font-size:11.5px;color:var(--muted);white-space:nowrap}
+
+.form{display:flex;flex-direction:column;gap:6px}
+.form label{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:8px}
+.form input{
+  background:var(--card2);border:1px solid var(--line);color:var(--text);
+  padding:11px 13px;border-radius:10px;font-size:14.5px;width:100%;
+}
+.form input:focus{outline:none;border-color:var(--accent)}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.form .btn-primary{margin-top:16px}
+
+#toast{
+  position:fixed;bottom:90px;left:50%;transform:translate(-50%,30px);
+  background:var(--accent);color:#08130d;
+  padding:11px 20px;border-radius:99px;font-weight:700;font-size:13.5px;
+  opacity:0;pointer-events:none;transition:.25s;z-index:200;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90vw;text-align:center;
+}
+#toast.show{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span>🍽️</span>
+    <h1>Tracker Makan</h1>
+  </div>
+  <div class="date-nav">
+    <button id="prev-day">‹</button>
+    <input type="date" id="date-picker">
+    <button id="next-day">›</button>
+  </div>
+</header>
+
+<main>
+  <section id="view-hari" class="view active"></section>
+  <section id="view-riwayat" class="view"></section>
+  <section id="view-bahan" class="view"></section>
+  <section id="view-setting" class="view"></section>
+</main>
+
+<nav class="bottom-nav">
+  <button data-view="hari" class="active">📅<span>Hari Ini</span></button>
+  <button data-view="riwayat">📊<span>Riwayat</span></button>
+  <button data-view="bahan">🥗<span>Bahan</span></button>
+  <button data-view="setting">⚙️<span>Setting</span></button>
+</nav>
+
+<div id="sheet" class="sheet-backdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-tabs">
+        <button class="active" data-stab="bahan">Dari Bahan</button>
+        <button data-stab="manual">Input Manual</button>
+      </div>
+      <button class="sheet-close" id="sheet-close">✕</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+const KEY = 'trackerMakanV1';
+const uid = () => Math.random().toString(36).slice(2,9);
+const round1 = v => Math.round((Number(v)||0)*10)/10;
+const fmt = v => round1(v).toLocaleString('id-ID',{maximumFractionDigits:1});
+const num = v => { const n = parseFloat(String(v).replace(',','.')); return isNaN(n)?0:n; };
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const defaultBahan = [
+  {id:'telur',nama:'Telur ayam',kkal:143,protein:12.6,karbo:0.7,lemak:9.5},
+  {id:'nasi',nama:'Nasi putih (matang)',kkal:130,protein:2.7,karbo:28.2,lemak:0.3},
+  {id:'ayam',nama:'Dada ayam (mentah)',kkal:120,protein:22.5,karbo:0,lemak:2.6},
+  {id:'tempe',nama:'Tempe',kkal:192,protein:20.3,karbo:7.6,lemak:10.8},
+  {id:'tahu',nama:'Tahu',kkal:76,protein:8.1,karbo:1.9,lemak:4.8},
+  {id:'bayam',nama:'Bayam (matang)',kkal:23,protein:3,karbo:3.8,lemak:0.3},
+  {id:'pisang',nama:'Pisang',kkal:89,protein:1.1,karbo:22.8,lemak:0.3},
+  {id:'pepaya',nama:'Pepaya',kkal:43,protein:0.5,karbo:10.8,lemak:0.3},
+  {id:'susu',nama:'Susu UHT coklat',kkal:88,protein:2.8,karbo:12,lemak:2.8},
+  {id:'minyak',nama:'Minyak goreng',kkal:884,protein:0,karbo:0,lemak:100},
+  {id:'creatine',nama:'Creatine',kkal:0,protein:0,karbo:0,lemak:0},
+  {id:'kangkung',nama:'Kangkung (matang)',kkal:19,protein:2.6,karbo:3.1,lemak:0.2},
+  {id:'oat',nama:'Oat (kering)',kkal:379,protein:13.2,karbo:67.7,lemak:6.5},
+  {id:'ubi',nama:'Ubi jalar (rebus)',kkal:90,protein:2,karbo:22,lemak:0.2},
+  {id:'kentang',nama:'Kentang (rebus)',kkal:87,protein:1.9,karbo:20.1,lemak:0.1},
+  {id:'semangka',nama:'Semangka',kkal:30,protein:0.6,karbo:7.6,lemak:0.2},
+  {id:'mangga',nama:'Mangga',kkal:60,protein:0.8,karbo:15,lemak:0.4},
+  {id:'nila',nama:'Ikan nila (mentah)',kkal:96,protein:20.1,karbo:0,lemak:1.7},
+  {id:'tongkol',nama:'Ikan tongkol (mentah)',kkal:103,protein:22,karbo:0,lemak:1},
+  {id:'tuna',nama:'Tuna kaleng (air, tiriskan)',kkal:116,protein:25.5,karbo:0,lemak:0.8},
+  {id:'sarden',nama:'Sarden kaleng (minyak, tiriskan)',kkal:208,protein:24.6,karbo:0,lemak:11.5},
+  {id:'hati',nama:'Hati ayam (mentah)',kkal:119,protein:16.9,karbo:0.7,lemak:4.8},
+  {id:'kacanghijau',nama:'Kacang hijau (rebus)',kkal:105,protein:7,karbo:19.2,lemak:0.4},
+  {id:'sawi',nama:'Sawi hijau (matang)',kkal:15,protein:1.6,karbo:2.9,lemak:0.1},
+  {id:'kol',nama:'Kol (matang)',kkal:23,protein:1.3,karbo:5.5,lemak:0.1}
+];
+
+function defaultState(){
+  return {target:1800, bahan:defaultBahan(), log:{}};
+}
+
+let state = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      if(s && s.bahan && s.log && typeof s.target === 'number') return s;
+    }
+  }catch(e){}
+  return defaultState();
+}
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+  },200);
+}
+
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function formatTanggal(iso){
+  const d = new Date(iso+'T00:00:00');
+  const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return hari[d.getDay()]+', '+d.getDate()+' '+bulan[d.getMonth()]+' '+d.getFullYear();
+}
+function shiftDate(iso,delta){
+  const d = new Date(iso+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+let currentDate = todayISO();
+let currentView = 'hari';
+let sheetSearchQuery = '';
+
+function hitungItem(item){
+  if(item.tipe==='manual'){
+    return {kkal:item.kkal||0,protein:item.protein||0,karbo:item.karbo||0,lemak:item.lemak||0};
+  }
+  const b = state.bahan.find(x=>x.id===item.bahanId);
+  if(!b) return {kkal:0,protein:0,karbo:0,lemak:0};
+  const f = (item.gram||0)/100;
+  return {kkal:b.kkal*f,protein:b.protein*f,karbo:b.karbo*f,lemak:b.lemak*f};
+}
+function namaItem(item){
+  if(item.tipe==='manual') return item.nama||'(tanpa nama)';
+  const b = state.bahan.find(x=>x.id===item.bahanId);
+  return b?b.nama:'(bahan dihapus)';
+}
+function totalHari(iso){
+  const items = state.log[iso]||[];
+  const t = {kkal:0,protein:0,karbo:0,lemak:0};
+  items.forEach(i=>{
+    const h = hitungItem(i);
+    t.kkal+=h.kkal;t.protein+=h.protein;t.karbo+=h.karbo;t.lemak+=h.lemak;
+  });
+  return {kkal:round1(t.kkal),protein:round1(t.protein),karbo:round1(t.karbo),lemak:round1(t.lemak)};
+}
+function statusHero(sisa,target){
+  if(sisa<0) return 'over';
+  if(sisa<target*0.15) return 'warn';
+  return 'ok';
+}
+
+/* ============ RENDER: HARI INI ============ */
+function renderHari(){
+  const el = document.getElementById('view-hari');
+  const iso = currentDate;
+  const items = state.log[iso]||[];
+  const t = totalHari(iso);
+  const target = state.target;
+  const sisa = target - t.kkal;
+  const pct = target>0 ? Math.min(100, t.kkal/target*100) : 0;
+  const cls = statusHero(sisa,target);
+  const isToday = iso===todayISO();
+
+  el.innerHTML = `
+    <div class="hero ${cls}">
+      <div class="hero-label">${isToday?'Sisa hari ini':(sisa>=0?'Sisa di tanggal ini':'Kelebihan')}</div>
+      <div class="hero-angka">
+        <span>${sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa))}</span>
+        <small>kkal</small>
+      </div>
+      <div class="hero-bar"><div style="width:${pct}%;background:${cls==='over'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent)'}"></div></div>
+      <div class="hero-stat">
+        <div><small>Masuk</small><b>${fmt(t.kkal)}</b></div>
+        <div><small>Target</small><b>${fmt(target)}</b></div>
+        <div><small>Protein</small><b>${fmt(t.protein)}g</b></div>
+        <div><small>Karbo</small><b>${fmt(t.karbo)}g</b></div>
+        <div><small>Lemak</small><b>${fmt(t.lemak)}g</b></div>
+      </div>
+    </div>
+
+    <div class="section-title">Makanan (${items.length})</div>
+    <div class="log-list">
+      ${items.length ? items.map((it,idx)=>{
+        const h = hitungItem(it);
+        const nm = namaItem(it);
+        return `
+          <div class="log-item" data-idx="${idx}">
+            <div class="li-info">
+              <div class="li-nama">${esc(nm)}</div>
+              <div class="li-makro"><b>${fmt(h.kkal)}</b> kkal · ${fmt(h.protein)}P · ${fmt(h.karbo)}K · ${fmt(h.lemak)}L</div>
+            </div>
+            ${it.tipe==='bahan'
+              ? `<div class="li-gram-wrap"><input class="li-gram" type="number" inputmode="decimal" value="${it.gram}" data-act="gram"><small>g</small></div>`
+              : `<div class="li-gram-wrap li-gram-empty">manual</div>`}
+            <button class="li-del" data-act="del">✕</button>
+          </div>
+        `;
+      }).join('') : '<div class="empty">Belum ada makanan. Klik tombol di bawah buat tambah.</div>'}
+    </div>
+
+    <button class="btn-add" id="btn-add">+ Tambah Makanan</button>
+  `;
+}
+
+/* ============ RENDER: RIWAYAT ============ */
+function renderRiwayat(){
+  const el = document.getElementById('view-riwayat');
+  const today = todayISO();
+  const dates = Object.keys(state.log).filter(d=>state.log[d]&&state.log[d].length>0);
+  if(!dates.includes(today)) dates.push(today);
+  dates.sort().reverse();
+
+  el.innerHTML = `
+    <div class="section-title">Riwayat (${dates.length} hari)</div>
+    <div class="riwayat-list">
+      ${dates.map(d=>{
+        const t = totalHari(d);
+        const sisa = state.target - t.kkal;
+        const cls = statusHero(sisa,state.target);
+        return `
+          <button class="riwayat-item" data-date="${d}">
+            <div>
+              <div class="ri-nama">${formatTanggal(d)}</div>
+              <div class="ri-sub">${fmt(t.kkal)} kkal masuk · target ${fmt(state.target)}</div>
+            </div>
+            <div class="ri-sisa ${cls}">
+              <b>${sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa))}</b>
+              <small>${sisa>=0?'sisa':'lebih'}</small>
+            </div>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* ============ RENDER: BASIS BAHAN ============ */
+function renderBahan(){
+  const el = document.getElementById('view-bahan');
+  el.innerHTML = `
+    <div class="section-title">Basis Bahan (${state.bahan.length})</div>
+    <div class="muted mb">Nilai per 100 gram. Klik kotaknya buat edit — otomatis kesimpen.</div>
+    <div class="bahan-list">
+      ${state.bahan.map(b=>`
+        <div class="bahan-item" data-id="${b.id}">
+          <input class="bahan-nama" value="${esc(b.nama)}" data-field="nama">
+          <div class="bahan-makro">
+            <label>Kkal<input type="number" inputmode="decimal" value="${b.kkal}" data-field="kkal"></label>
+            <label>Protein<input type="number" inputmode="decimal" step="0.1" value="${b.protein}" data-field="protein"></label>
+            <label>Karbo<input type="number" inputmode="decimal" step="0.1" value="${b.karbo}" data-field="karbo"></label>
+            <label>Lemak<input type="number" inputmode="decimal" step="0.1" value="${b.lemak}" data-field="lemak"></label>
+            <button class="bahan-del" data-act="del-bahan">✕</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <button class="btn-add" id="btn-add-bahan">+ Tambah Bahan Baru</button>
+  `;
+}
+
+/* ============ RENDER: SETTING ============ */
+function renderSetting(){
+  const el = document.getElementById('view-setting');
+  const jmlHari = Object.keys(state.log).filter(d=>state.log[d]&&state.log[d].length>0).length;
+  el.innerHTML = `
+    <div class="card">
+      <div class="section-title">Target Kalori Harian</div>
+      <div class="muted mb">Angka ini dipakai buat hitung sisa kalori tiap hari.</div>
+      <div class="target-row">
+        <input type="number" inputmode="decimal" id="target-input" value="${state.target}">
+        <span>kkal</span>
+      </div>
+      <button class="btn-primary btn-block" id="btn-save-target">Simpan Target</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Data</div>
+      <div class="muted mb">Data kesimpen otomatis di browser ini (localStorage). Backup rutin biar aman.</div>
+      <button class="btn-ghost" id="btn-export">⬇ Export Backup (JSON)</button>
+      <button class="btn-ghost" id="btn-import">⬆ Import Backup</button>
+      <button class="btn-danger" id="btn-reset">↺ Reset Semua Data</button>
+      <input type="file" id="file-import" accept="application/json" style="display:none">
+    </div>
+
+    <div class="card">
+      <div class="section-title">Info</div>
+      <div class="muted">
+        Total bahan: ${state.bahan.length}<br>
+        Total hari tercatat: ${jmlHari}<br>
+        Penyimpanan: browser (localStorage)
+      </div>
+    </div>
+  `;
+}
+
+/* ============ SHEET ============ */
+function renderSheetBahan(){
+  const sb = document.getElementById('sheet-body');
+  sb.innerHTML = `
+    <input id="sheet-search" class="search-input" placeholder="🔍 Cari bahan..." value="${esc(sheetSearchQuery)}">
+    <div class="pick-list" id="pick-list"></div>
+  `;
+  renderPickList();
+  setTimeout(()=>{
+    const inp = document.getElementById('sheet-search');
+    if(inp) inp.focus();
+  },60);
+}
+function renderPickList(){
+  const cont = document.getElementById('pick-list');
+  if(!cont) return;
+  const q = sheetSearchQuery.toLowerCase();
+  const filtered = state.bahan.filter(b=>b.nama.toLowerCase().includes(q));
+  cont.innerHTML = filtered.length ? filtered.map(b=>`
+    <button class="pick-item" data-pick="${b.id}">
+      <div class="pi-nama">${esc(b.nama)}</div>
+      <div class="pi-info">${fmt(b.kkal)} kkal · ${fmt(b.protein)}P /100g</div>
+    </button>
+  `).join('') : '<div class="empty">Bahan gak ketemu. Tambahin dulu di tab Basis Bahan.</div>';
+}
+function renderSheetManual(){
+  const sb = document.getElementById('sheet-body');
+  sb.innerHTML = `
+    <div class="form">
+      <label>Nama makanan</label>
+      <input id="m-nama" placeholder="Nasi padang, indomie, dll">
+      <label>Kalori (kkal)</label>
+      <input id="m-kkal" type="number" inputmode="decimal" placeholder="0">
+      <div class="grid-3">
+        <div><label>Protein (g)</label><input id="m-protein" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>
+        <div><label>Karbo (g)</label><input id="m-karbo" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>
+        <div><label>Lemak (g)</label><input id="m-lemak" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>
+      </div>
+      <button class="btn-primary btn-block" id="btn-save-manual">+ Tambah ke Tanggal Ini</button>
+    </div>
+  `;
+  setTimeout(()=>document.getElementById('m-nama')?.focus(),60);
+}
+function openSheet(tab){
+  document.getElementById('sheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.querySelectorAll('[data-stab]').forEach(b=>b.classList.toggle('active', b.dataset.stab===tab));
+  sheetSearchQuery = '';
+  if(tab==='bahan') renderSheetBahan();
+  else renderSheetManual();
+}
+function closeSheet(){
+  document.getElementById('sheet').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ============ VIEW SWITCH ============ */
+function switchView(view){
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+  document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  if(view==='hari') renderHari();
+  else if(view==='riwayat') renderRiwayat();
+  else if(view==='bahan') renderBahan();
+  else if(view==='setting') renderSetting();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+function tambahKeHari(item){
+  if(!state.log[currentDate]) state.log[currentDate]=[];
+  state.log[currentDate].push(item);
+  save();
+  if(currentView==='hari') renderHari();
+}
+
+/* ============ EVENTS ============ */
+document.addEventListener('click', e=>{
+  const t = e.target;
+
+  // bottom nav
+  const nav = t.closest('.bottom-nav button[data-view]');
+  if(nav){ switchView(nav.dataset.view); return; }
+
+  // date nav
+  if(t.id==='prev-day'){
+    currentDate = shiftDate(currentDate,-1);
+    document.getElementById('date-picker').value = currentDate;
+    renderHari(); return;
+  }
+  if(t.id==='next-day'){
+    currentDate = shiftDate(currentDate,1);
+    document.getElementById('date-picker').value = currentDate;
+    renderHari(); return;
+  }
+
+  // tambah makanan
+  if(t.id==='btn-add'){ openSheet('bahan'); return; }
+  if(t.id==='sheet-close' || t.id==='sheet'){ closeSheet(); return; }
+
+  // tab sheet
+  const stab = t.closest('[data-stab]');
+  if(stab){
+    document.querySelectorAll('[data-stab]').forEach(b=>b.classList.toggle('active', b===stab));
+    if(stab.dataset.stab==='bahan') renderSheetBahan();
+    else renderSheetManual();
+    return;
+  }
+
+  // pilih bahan
+  const pick = t.closest('[data-pick]');
+  if(pick){
+    const bahanId = pick.dataset.pick;
+    tambahKeHari({id:uid(),tipe:'bahan',bahanId,gram:100});
+    closeSheet();
+    toast('Ditambah 100g — edit gram di list');
+    return;
+  }
+
+  // simpan manual
+  if(t.id==='btn-save-manual'){
+    const nama = document.getElementById('m-nama').value.trim();
+    const kkal = num(document.getElementById('m-kkal').value);
+    if(!nama){ alert('Isi nama makanan dulu'); return; }
+    if(kkal<=0 && !confirm('Kalori 0, lanjut?')) return;
+    tambahKeHari({
+      id:uid(),tipe:'manual',nama,
+      kkal,
+      protein:num(document.getElementById('m-protein').value),
+      karbo:num(document.getElementById('m-karbo').value),
+      lemak:num(document.getElementById('m-lemak').value)
+    });
+    closeSheet();
+    toast('Ditambah: '+nama);
+    return;
+  }
+
+  // hapus item dari log
+  const delLog = t.closest('[data-act="del"]');
+  if(delLog){
+    const row = delLog.closest('.log-item');
+    const idx = parseInt(row.dataset.idx);
+    const items = state.log[currentDate]||[];
+    items.splice(idx,1);
+    save(); renderHari();
+    return;
+  }
+
+  // tambah bahan baru
+  if(t.id==='btn-add-bahan'){
+    const b = {id:uid(),nama:'Bahan baru',kkal:0,protein:0,karbo:0,lemak:0};
+    state.bahan.push(b);
+    save(); renderBahan();
+    setTimeout(()=>{
+      const inp = document.querySelector('[data-id="'+b.id+'"] .bahan-nama');
+      if(inp){ inp.focus(); inp.select(); }
+    },30);
+    return;
+  }
+
+  // hapus bahan
+  const delBahan = t.closest('[data-act="del-bahan"]');
+  if(delBahan){
+    const item = delBahan.closest('.bahan-item');
+    const id = item.dataset.id;
+    const b = state.bahan.find(x=>x.id===id);
+    let used = 0;
+    Object.values(state.log).forEach(arr=>arr.forEach(i=>{ if(i.bahanId===id) used++; }));
+    const msg = used>0
+      ? '"'+b.nama+'" dipakai di '+used+' catatan. Item itu jadi 0 kkal. Lanjut hapus?'
+      : 'Hapus "'+b.nama+'"?';
+    if(!confirm(msg)) return;
+    state.bahan = state.bahan.filter(x=>x.id!==id);
+    save(); renderBahan();
+    return;
+  }
+
+  // riwayat klik
+  const riw = t.closest('[data-date]');
+  if(riw){
+    currentDate = riw.dataset.date;
+    document.getElementById('date-picker').value = currentDate;
+    switchView('hari');
+    return;
+  }
+
+  // simpan target
+  if(t.id==='btn-save-target'){
+    const v = num(document.getElementById('target-input').value);
+    if(v<=0){ alert('Target harus lebih dari 0'); return; }
+    state.target = v;
+    save();
+    toast('Target disimpen: '+fmt(v)+' kkal');
+    return;
+  }
+
+  // export
+  if(t.id==='btn-export'){
+    const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'tracker-makan-'+todayISO()+'.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Backup diunduh');
+    return;
+  }
+
+  // import
+  if(t.id==='btn-import'){
+    document.getElementById('file-import').click();
+    return;
+  }
+
+  // reset
+  if(t.id==='btn-reset'){
+    if(!confirm('Reset SEMUA data (bahan + riwayat + target)? Gak bisa dibatalin.')) return;
+    state = defaultState();
+    save();
+    switchView('hari');
+    toast('Data direset');
+    return;
+  }
+});
+
+document.addEventListener('input', e=>{
+  const t = e.target;
+
+  // gram di log
+  if(t.dataset.act==='gram'){
+    const row = t.closest('.log-item');
+    const idx = parseInt(row.dataset.idx);
+    const items = state.log[currentDate]||[];
+    if(items[idx]){
+      items[idx].gram = num(t.value);
+      save();
+      const h = hitungItem(items[idx]);
+      const info = row.querySelector('.li-makro');
+      if(info) info.innerHTML = `<b>${fmt(h.kkal)}</b> kkal · ${fmt(h.protein)}P · ${fmt(h.karbo)}K · ${fmt(h.lemak)}L`;
+      updateHero();
+    }
+    return;
+  }
+
+  // edit bahan
+  const bahanItem = t.closest('.bahan-item');
+  if(bahanItem && t.dataset.field){
+    const b = state.bahan.find(x=>x.id===bahanItem.dataset.id);
+    if(!b) return;
+    const f = t.dataset.field;
+    if(f==='nama') b.nama = t.value;
+    else b[f] = num(t.value);
+    save();
+    return;
+  }
+
+  // search di sheet
+  if(t.id==='sheet-search'){
+    sheetSearchQuery = t.value;
+    renderPickList();
+    return;
+  }
+});
+
+document.addEventListener('change', e=>{
+  if(e.target.id==='date-picker' && e.target.value){
+    currentDate = e.target.value;
+    renderHari();
+    return;
+  }
+  if(e.target.id==='file-import'){
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const s = JSON.parse(reader.result);
+        if(!s.bahan||!s.log||typeof s.target!=='number') throw new Error('format');
+        if(!confirm('Ganti semua data dengan backup ini?')) return;
+        state = s;
+        save();
+        switchView('hari');
+        toast('Data diimport');
+      }catch(err){
+        alert('File backup gak valid.');
+      }
+    };
+    reader.readAsText(f);
+    e.target.value = '';
+  }
+});
+
+// update hero tanpa re-render list
+function updateHero(){
+  const t = totalHari(currentDate);
+  const target = state.target;
+  const sisa = target - t.kkal;
+  const pct = target>0 ? Math.min(100, t.kkal/target*100) : 0;
+  const cls = statusHero(sisa,target);
+  const hero = document.querySelector('.hero');
+  if(!hero) return;
+  hero.className = 'hero '+cls;
+  hero.querySelector('.hero-angka span').textContent = sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa));
+  const bar = hero.querySelector('.hero-bar>div');
+  bar.style.width = pct+'%';
+  bar.style.background = cls==='over'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent)';
+  const stats = hero.querySelectorAll('.hero-stat b');
+  if(stats.length>=5){
+    stats[0].textContent = fmt(t.kkal);
+    stats[1].textContent = fmt(target);
+    stats[2].textContent = fmt(t.protein)+'g';
+    stats[3].textContent = fmt(t.karbo)+'g';
+    stats[4].textContent = fmt(t.lemak)+'g';
+  }
+}
+
+/* ============ INIT ============ */
+document.getElementById('date-picker').value = currentDate;
+renderHari();
+
+})();
+</script>
+</body>
+</html>
