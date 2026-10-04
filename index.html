@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0e1116">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Tracker Makan</title>
 <style>
@@ -15,12 +16,13 @@
   --text:#e6edf3;--muted:#8b98a8;--accent:#3ddc97;--blue:#4aa8ff;
   --warn:#ffb454;--danger:#ff6b6b;
 }
-html,body{height:100%}
+html,body{min-height:100vh}
 body{
   background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  font-size:15px;line-height:1.45;padding-bottom:80px;
+  font-size:15px;line-height:1.45;padding-bottom:120px;
   -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
 }
 input,button,select{font:inherit;color:inherit}
 
@@ -185,10 +187,12 @@ main{padding:14px;max-width:600px;margin:0 auto}
 
 .sheet-backdrop{
   position:fixed;inset:0;background:rgba(0,0,0,.55);
-  opacity:0;pointer-events:none;transition:.2s;z-index:100;
+  opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity .2s,visibility 0s .2s;
+  z-index:100;
   display:flex;align-items:flex-end;justify-content:center;
 }
-.sheet-backdrop.open{opacity:1;pointer-events:auto}
+.sheet-backdrop.open{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .2s,visibility 0s 0s}
 .sheet{
   background:var(--bg);width:100%;max-width:600px;
   max-height:85vh;border-radius:20px 20px 0 0;
@@ -206,7 +210,7 @@ main{padding:14px;max-width:600px;margin:0 auto}
 }
 .sheet-tabs button.active{background:var(--card2);color:var(--accent)}
 .sheet-close{background:var(--card2);border:none;color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:14px}
-.sheet-body{padding:14px;overflow-y:auto;flex:1}
+.sheet-body{padding:14px;overflow-y:auto;flex:1;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 
 .search-input{
   width:100%;background:var(--card2);border:1px solid var(--line);
