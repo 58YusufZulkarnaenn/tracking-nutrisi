@@ -489,8 +489,29 @@ function renderBahan(){
     html += '</div></div>';
   });
   html += '</div>';
-  html += '<button class="btn-add" id="btn-add-bahan">+ Tambah Bahan Baru</button>';
+  html += '<button class="btn-add" id="btn-add-bahan" style="margin-bottom:80px">+ Tambah Bahan Baru</button>';
   el.innerHTML = html;
+
+  var fab = document.createElement('button');
+  fab.textContent = '+';
+  fab.title = 'Tambah bahan baru';
+  fab.style.cssText = 'position:fixed;bottom:90px;right:20px;width:58px;height:58px;border-radius:50%;background:#3ddc97;color:#08130d;border:none;font-size:30px;font-weight:700;cursor:pointer;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.5);line-height:1;padding:0';
+  fab.onclick = function(){
+    var nb = {id:uid(),nama:'Bahan baru',kkal:0,protein:0,karbo:0,lemak:0};
+    state.bahan.push(nb);
+    save();
+    renderBahan();
+    toast('Bahan ditambah - isi nilainya');
+    setTimeout(function(){
+      var inp = document.querySelector('[data-id="'+nb.id+'"] .bahan-nama');
+      if(inp){
+        inp.scrollIntoView({block:'center',behavior:'smooth'});
+        inp.focus();
+        inp.select();
+      }
+    },100);
+  };
+  el.appendChild(fab);
 }
 
 function renderSetting(){
