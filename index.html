@@ -290,14 +290,14 @@ main{padding:14px;max-width:600px;margin:0 auto}
 (function(){
 'use strict';
 
-const KEY = 'trackerMakanV1';
-const uid = () => Math.random().toString(36).slice(2,9);
-const round1 = v => Math.round((Number(v)||0)*10)/10;
-const fmt = v => round1(v).toLocaleString('id-ID',{maximumFractionDigits:1});
-const num = v => { const n = parseFloat(String(v).replace(',','.')); return isNaN(n)?0:n; };
-const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+var KEY = 'trackerMakanV1';
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function round1(v){ return Math.round((Number(v)||0)*10)/10; }
+function fmt(v){ return round1(v).toLocaleString('id-ID',{maximumFractionDigits:1}); }
+function num(v){ var n = parseFloat(String(v).replace(',','.')); return isNaN(n)?0:n; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
-const defaultBahan = [
+var defaultBahan = [
   {id:'telur',nama:'Telur ayam',kkal:143,protein:12.6,karbo:0.7,lemak:9.5},
   {id:'nasi',nama:'Nasi putih (matang)',kkal:130,protein:2.7,karbo:28.2,lemak:0.3},
   {id:'ayam',nama:'Dada ayam (mentah)',kkal:120,protein:22.5,karbo:0,lemak:2.6},
@@ -326,67 +326,68 @@ const defaultBahan = [
 ];
 
 function defaultState(){
-  return {target:1800, bahan:defaultBahan(), log:{}};
+  return {target:1800, bahan:defaultBahan.slice(), log:{}};
 }
 
-let state = load();
+var state = load();
 function load(){
   try{
-    const raw = localStorage.getItem(KEY);
+    var raw = localStorage.getItem(KEY);
     if(raw){
-      const s = JSON.parse(raw);
+      var s = JSON.parse(raw);
       if(s && s.bahan && s.log && typeof s.target === 'number') return s;
     }
   }catch(e){}
   return defaultState();
 }
-let saveTimer;
+var saveTimer;
 function save(){
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>{
+  saveTimer = setTimeout(function(){
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
   },200);
 }
 
 function todayISO(){
-  const d = new Date();
+  var d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function formatTanggal(iso){
-  const d = new Date(iso+'T00:00:00');
-  const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-  const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  var d = new Date(iso+'T00:00:00');
+  var hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   return hari[d.getDay()]+', '+d.getDate()+' '+bulan[d.getMonth()]+' '+d.getFullYear();
 }
 function shiftDate(iso,delta){
-  const d = new Date(iso+'T00:00:00');
+  var d = new Date(iso+'T00:00:00');
   d.setDate(d.getDate()+delta);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-let currentDate = todayISO();
-let currentView = 'hari';
-let sheetSearchQuery = '';
+var currentDate = todayISO();
+var currentView = 'hari';
+var sheetSearchQuery = '';
 
 function hitungItem(item){
   if(item.tipe==='manual'){
     return {kkal:item.kkal||0,protein:item.protein||0,karbo:item.karbo||0,lemak:item.lemak||0};
   }
-  const b = state.bahan.find(x=>x.id===item.bahanId);
+  var b = null;
+  for(var i=0;i<state.bahan.length;i++){ if(state.bahan[i].id===item.bahanId){ b=state.bahan[i]; break; } }
   if(!b) return {kkal:0,protein:0,karbo:0,lemak:0};
-  const f = (item.gram||0)/100;
+  var f = (item.gram||0)/100;
   return {kkal:b.kkal*f,protein:b.protein*f,karbo:b.karbo*f,lemak:b.lemak*f};
 }
 function namaItem(item){
   if(item.tipe==='manual') return item.nama||'(tanpa nama)';
-  const b = state.bahan.find(x=>x.id===item.bahanId);
-  return b?b.nama:'(bahan dihapus)';
+  for(var i=0;i<state.bahan.length;i++){ if(state.bahan[i].id===item.bahanId) return state.bahan[i].nama; }
+  return '(bahan dihapus)';
 }
 function totalHari(iso){
-  const items = state.log[iso]||[];
-  const t = {kkal:0,protein:0,karbo:0,lemak:0};
-  items.forEach(i=>{
-    const h = hitungItem(i);
+  var items = state.log[iso]||[];
+  var t = {kkal:0,protein:0,karbo:0,lemak:0};
+  items.forEach(function(i){
+    var h = hitungItem(i);
     t.kkal+=h.kkal;t.protein+=h.protein;t.karbo+=h.karbo;t.lemak+=h.lemak;
   });
   return {kkal:round1(t.kkal),protein:round1(t.protein),karbo:round1(t.karbo),lemak:round1(t.lemak)};
@@ -397,197 +398,172 @@ function statusHero(sisa,target){
   return 'ok';
 }
 
-/* ============ RENDER: HARI INI ============ */
 function renderHari(){
-  const el = document.getElementById('view-hari');
-  const iso = currentDate;
-  const items = state.log[iso]||[];
-  const t = totalHari(iso);
-  const target = state.target;
-  const sisa = target - t.kkal;
-  const pct = target>0 ? Math.min(100, t.kkal/target*100) : 0;
-  const cls = statusHero(sisa,target);
-  const isToday = iso===todayISO();
+  var el = document.getElementById('view-hari');
+  var iso = currentDate;
+  var items = state.log[iso]||[];
+  var t = totalHari(iso);
+  var target = state.target;
+  var sisa = target - t.kkal;
+  var pct = target>0 ? Math.min(100, t.kkal/target*100) : 0;
+  var cls = statusHero(sisa,target);
+  var isToday = iso===todayISO();
 
-  el.innerHTML = `
-    <div class="hero ${cls}">
-      <div class="hero-label">${isToday?'Sisa hari ini':(sisa>=0?'Sisa di tanggal ini':'Kelebihan')}</div>
-      <div class="hero-angka">
-        <span>${sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa))}</span>
-        <small>kkal</small>
-      </div>
-      <div class="hero-bar"><div style="width:${pct}%;background:${cls==='over'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent)'}"></div></div>
-      <div class="hero-stat">
-        <div><small>Masuk</small><b>${fmt(t.kkal)}</b></div>
-        <div><small>Target</small><b>${fmt(target)}</b></div>
-        <div><small>Protein</small><b>${fmt(t.protein)}g</b></div>
-        <div><small>Karbo</small><b>${fmt(t.karbo)}g</b></div>
-        <div><small>Lemak</small><b>${fmt(t.lemak)}g</b></div>
-      </div>
-    </div>
+  var html = '';
+  html += '<div class="hero '+cls+'">';
+  html += '<div class="hero-label">'+(isToday?'Sisa hari ini':(sisa>=0?'Sisa di tanggal ini':'Kelebihan'))+'</div>';
+  html += '<div class="hero-angka"><span>'+(sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa)))+'</span><small>kkal</small></div>';
+  html += '<div class="hero-bar"><div style="width:'+pct+'%;background:'+(cls==='over'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent)')+'"></div></div>';
+  html += '<div class="hero-stat">';
+  html += '<div><small>Masuk</small><b>'+fmt(t.kkal)+'</b></div>';
+  html += '<div><small>Target</small><b>'+fmt(target)+'</b></div>';
+  html += '<div><small>Protein</small><b>'+fmt(t.protein)+'g</b></div>';
+  html += '<div><small>Karbo</small><b>'+fmt(t.karbo)+'g</b></div>';
+  html += '<div><small>Lemak</small><b>'+fmt(t.lemak)+'g</b></div>';
+  html += '</div></div>';
 
-    <div class="section-title">Makanan (${items.length})</div>
-    <div class="log-list">
-      ${items.length ? items.map((it,idx)=>{
-        const h = hitungItem(it);
-        const nm = namaItem(it);
-        return `
-          <div class="log-item" data-idx="${idx}">
-            <div class="li-info">
-              <div class="li-nama">${esc(nm)}</div>
-              <div class="li-makro"><b>${fmt(h.kkal)}</b> kkal · ${fmt(h.protein)}P · ${fmt(h.karbo)}K · ${fmt(h.lemak)}L</div>
-            </div>
-            ${it.tipe==='bahan'
-              ? `<div class="li-gram-wrap"><input class="li-gram" type="number" inputmode="decimal" value="${it.gram}" data-act="gram"><small>g</small></div>`
-              : `<div class="li-gram-wrap li-gram-empty">manual</div>`}
-            <button class="li-del" data-act="del">✕</button>
-          </div>
-        `;
-      }).join('') : '<div class="empty">Belum ada makanan. Klik tombol di bawah buat tambah.</div>'}
-    </div>
-
-    <button class="btn-add" id="btn-add">+ Tambah Makanan</button>
-  `;
+  html += '<div class="section-title">Makanan ('+items.length+')</div>';
+  html += '<div class="log-list">';
+  if(items.length===0){
+    html += '<div class="empty">Belum ada makanan. Klik tombol di bawah buat tambah.</div>';
+  } else {
+    items.forEach(function(it,idx){
+      var h = hitungItem(it);
+      var nm = namaItem(it);
+      html += '<div class="log-item" data-idx="'+idx+'">';
+      html += '<div class="li-info">';
+      html += '<div class="li-nama">'+esc(nm)+'</div>';
+      html += '<div class="li-makro"><b>'+fmt(h.kkal)+'</b> kkal &middot; '+fmt(h.protein)+'P &middot; '+fmt(h.karbo)+'K &middot; '+fmt(h.lemak)+'L</div>';
+      html += '</div>';
+      if(it.tipe==='bahan'){
+        html += '<div class="li-gram-wrap"><input class="li-gram" type="number" inputmode="decimal" value="'+it.gram+'" data-act="gram"><small>g</small></div>';
+      } else {
+        html += '<div class="li-gram-wrap li-gram-empty">manual</div>';
+      }
+      html += '<button class="li-del" data-act="del">&#10005;</button>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+  html += '<button class="btn-add" id="btn-add">+ Tambah Makanan</button>';
+  el.innerHTML = html;
 }
 
-/* ============ RENDER: RIWAYAT ============ */
 function renderRiwayat(){
-  const el = document.getElementById('view-riwayat');
-  const today = todayISO();
-  const dates = Object.keys(state.log).filter(d=>state.log[d]&&state.log[d].length>0);
-  if(!dates.includes(today)) dates.push(today);
+  var el = document.getElementById('view-riwayat');
+  var today = todayISO();
+  var dates = Object.keys(state.log).filter(function(d){ return state.log[d] && state.log[d].length>0; });
+  if(dates.indexOf(today)===-1) dates.push(today);
   dates.sort().reverse();
 
-  el.innerHTML = `
-    <div class="section-title">Riwayat (${dates.length} hari)</div>
-    <div class="riwayat-list">
-      ${dates.map(d=>{
-        const t = totalHari(d);
-        const sisa = state.target - t.kkal;
-        const cls = statusHero(sisa,state.target);
-        return `
-          <button class="riwayat-item" data-date="${d}">
-            <div>
-              <div class="ri-nama">${formatTanggal(d)}</div>
-              <div class="ri-sub">${fmt(t.kkal)} kkal masuk · target ${fmt(state.target)}</div>
-            </div>
-            <div class="ri-sisa ${cls}">
-              <b>${sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa))}</b>
-              <small>${sisa>=0?'sisa':'lebih'}</small>
-            </div>
-          </button>
-        `;
-      }).join('')}
-    </div>
-  `;
+  var html = '<div class="section-title">Riwayat ('+dates.length+' hari)</div>';
+  html += '<div class="riwayat-list">';
+  dates.forEach(function(d){
+    var t = totalHari(d);
+    var sisa = state.target - t.kkal;
+    var cls = statusHero(sisa,state.target);
+    html += '<button class="riwayat-item" data-date="'+d+'">';
+    html += '<div><div class="ri-nama">'+formatTanggal(d)+'</div>';
+    html += '<div class="ri-sub">'+fmt(t.kkal)+' kkal masuk &middot; target '+fmt(state.target)+'</div></div>';
+    html += '<div class="ri-sisa '+cls+'"><b>'+(sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa)))+'</b><small>'+(sisa>=0?'sisa':'lebih')+'</small></div>';
+    html += '</button>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
 }
 
-/* ============ RENDER: BASIS BAHAN ============ */
 function renderBahan(){
-  const el = document.getElementById('view-bahan');
-  el.innerHTML = `
-    <div class="section-title">Basis Bahan (${state.bahan.length})</div>
-    <div class="muted mb">Nilai per 100 gram. Klik kotaknya buat edit — otomatis kesimpen.</div>
-    <div class="bahan-list">
-      ${state.bahan.map(b=>`
-        <div class="bahan-item" data-id="${b.id}">
-          <input class="bahan-nama" value="${esc(b.nama)}" data-field="nama">
-          <div class="bahan-makro">
-            <label>Kkal<input type="number" inputmode="decimal" value="${b.kkal}" data-field="kkal"></label>
-            <label>Protein<input type="number" inputmode="decimal" step="0.1" value="${b.protein}" data-field="protein"></label>
-            <label>Karbo<input type="number" inputmode="decimal" step="0.1" value="${b.karbo}" data-field="karbo"></label>
-            <label>Lemak<input type="number" inputmode="decimal" step="0.1" value="${b.lemak}" data-field="lemak"></label>
-            <button class="bahan-del" data-act="del-bahan">✕</button>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <button class="btn-add" id="btn-add-bahan">+ Tambah Bahan Baru</button>
-  `;
+  var el = document.getElementById('view-bahan');
+  var html = '<div class="section-title">Basis Bahan ('+state.bahan.length+')</div>';
+  html += '<div class="muted mb">Nilai per 100 gram. Klik kotaknya buat edit &mdash; otomatis kesimpen.</div>';
+  html += '<div class="bahan-list">';
+  state.bahan.forEach(function(b){
+    html += '<div class="bahan-item" data-id="'+b.id+'">';
+    html += '<input class="bahan-nama" value="'+esc(b.nama)+'" data-field="nama">';
+    html += '<div class="bahan-makro">';
+    html += '<label>Kkal<input type="number" inputmode="decimal" value="'+b.kkal+'" data-field="kkal"></label>';
+    html += '<label>Protein<input type="number" inputmode="decimal" step="0.1" value="'+b.protein+'" data-field="protein"></label>';
+    html += '<label>Karbo<input type="number" inputmode="decimal" step="0.1" value="'+b.karbo+'" data-field="karbo"></label>';
+    html += '<label>Lemak<input type="number" inputmode="decimal" step="0.1" value="'+b.lemak+'" data-field="lemak"></label>';
+    html += '<button class="bahan-del" data-act="del-bahan">&#10005;</button>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  html += '<button class="btn-add" id="btn-add-bahan">+ Tambah Bahan Baru</button>';
+  el.innerHTML = html;
 }
 
-/* ============ RENDER: SETTING ============ */
 function renderSetting(){
-  const el = document.getElementById('view-setting');
-  const jmlHari = Object.keys(state.log).filter(d=>state.log[d]&&state.log[d].length>0).length;
-  el.innerHTML = `
-    <div class="card">
-      <div class="section-title">Target Kalori Harian</div>
-      <div class="muted mb">Angka ini dipakai buat hitung sisa kalori tiap hari.</div>
-      <div class="target-row">
-        <input type="number" inputmode="decimal" id="target-input" value="${state.target}">
-        <span>kkal</span>
-      </div>
-      <button class="btn-primary btn-block" id="btn-save-target">Simpan Target</button>
-    </div>
-
-    <div class="card">
-      <div class="section-title">Data</div>
-      <div class="muted mb">Data kesimpen otomatis di browser ini (localStorage). Backup rutin biar aman.</div>
-      <button class="btn-ghost" id="btn-export">⬇ Export Backup (JSON)</button>
-      <button class="btn-ghost" id="btn-import">⬆ Import Backup</button>
-      <button class="btn-danger" id="btn-reset">↺ Reset Semua Data</button>
-      <input type="file" id="file-import" accept="application/json" style="display:none">
-    </div>
-
-    <div class="card">
-      <div class="section-title">Info</div>
-      <div class="muted">
-        Total bahan: ${state.bahan.length}<br>
-        Total hari tercatat: ${jmlHari}<br>
-        Penyimpanan: browser (localStorage)
-      </div>
-    </div>
-  `;
+  var el = document.getElementById('view-setting');
+  var jmlHari = Object.keys(state.log).filter(function(d){ return state.log[d] && state.log[d].length>0; }).length;
+  var html = '';
+  html += '<div class="card">';
+  html += '<div class="section-title">Target Kalori Harian</div>';
+  html += '<div class="muted mb">Angka ini dipakai buat hitung sisa kalori tiap hari.</div>';
+  html += '<div class="target-row"><input type="number" inputmode="decimal" id="target-input" value="'+state.target+'"><span>kkal</span></div>';
+  html += '<button class="btn-primary btn-block" id="btn-save-target">Simpan Target</button>';
+  html += '</div>';
+  html += '<div class="card">';
+  html += '<div class="section-title">Data</div>';
+  html += '<div class="muted mb">Data kesimpen otomatis di browser ini (localStorage). Backup rutin biar aman.</div>';
+  html += '<button class="btn-ghost" id="btn-export">Export Backup (JSON)</button>';
+  html += '<button class="btn-ghost" id="btn-import">Import Backup</button>';
+  html += '<button class="btn-danger" id="btn-reset">Reset Semua Data</button>';
+  html += '<input type="file" id="file-import" accept="application/json" style="display:none">';
+  html += '</div>';
+  html += '<div class="card">';
+  html += '<div class="section-title">Info</div>';
+  html += '<div class="muted">Total bahan: '+state.bahan.length+'<br>Total hari tercatat: '+jmlHari+'<br>Penyimpanan: browser (localStorage)</div>';
+  html += '</div>';
+  el.innerHTML = html;
 }
 
-/* ============ SHEET ============ */
 function renderSheetBahan(){
-  const sb = document.getElementById('sheet-body');
-  sb.innerHTML = `
-    <input id="sheet-search" class="search-input" placeholder="🔍 Cari bahan..." value="${esc(sheetSearchQuery)}">
-    <div class="pick-list" id="pick-list"></div>
-  `;
+  var sb = document.getElementById('sheet-body');
+  sb.innerHTML = '<input id="sheet-search" class="search-input" placeholder="Cari bahan..." value="'+esc(sheetSearchQuery)+'"><div class="pick-list" id="pick-list"></div>';
   renderPickList();
-  setTimeout(()=>{
-    const inp = document.getElementById('sheet-search');
-    if(inp) inp.focus();
-  },60);
+  setTimeout(function(){ var i = document.getElementById('sheet-search'); if(i) i.focus(); },60);
 }
 function renderPickList(){
-  const cont = document.getElementById('pick-list');
+  var cont = document.getElementById('pick-list');
   if(!cont) return;
-  const q = sheetSearchQuery.toLowerCase();
-  const filtered = state.bahan.filter(b=>b.nama.toLowerCase().includes(q));
-  cont.innerHTML = filtered.length ? filtered.map(b=>`
-    <button class="pick-item" data-pick="${b.id}">
-      <div class="pi-nama">${esc(b.nama)}</div>
-      <div class="pi-info">${fmt(b.kkal)} kkal · ${fmt(b.protein)}P /100g</div>
-    </button>
-  `).join('') : '<div class="empty">Bahan gak ketemu. Tambahin dulu di tab Basis Bahan.</div>';
+  var q = sheetSearchQuery.toLowerCase();
+  var filtered = state.bahan.filter(function(b){ return b.nama.toLowerCase().indexOf(q) !== -1; });
+  if(filtered.length===0){
+    cont.innerHTML = '<div class="empty">Bahan gak ketemu. Tambahin dulu di tab Basis Bahan.</div>';
+    return;
+  }
+  var html = '';
+  filtered.forEach(function(b){
+    html += '<button class="pick-item" data-pick="'+b.id+'">';
+    html += '<div class="pi-nama">'+esc(b.nama)+'</div>';
+    html += '<div class="pi-info">'+fmt(b.kkal)+' kkal &middot; '+fmt(b.protein)+'P /100g</div>';
+    html += '</button>';
+  });
+  cont.innerHTML = html;
 }
 function renderSheetManual(){
-  const sb = document.getElementById('sheet-body');
-  sb.innerHTML = `
-    <div class="form">
-      <label>Nama makanan</label>
-      <input id="m-nama" placeholder="Nasi padang, indomie, dll">
-      <label>Kalori (kkal)</label>
-      <input id="m-kkal" type="number" inputmode="decimal" placeholder="0">
-      <div class="grid-3">
-        <div><label>Protein (g)</label><input id="m-protein" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>
-        <div><label>Karbo (g)</label><input id="m-karbo" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>
-        <div><label>Lemak (g)</label><input id="m-lemak" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>
-      </div>
-      <button class="btn-primary btn-block" id="btn-save-manual">+ Tambah ke Tanggal Ini</button>
-    </div>
-  `;
-  setTimeout(()=>document.getElementById('m-nama')?.focus(),60);
+  var sb = document.getElementById('sheet-body');
+  var html = '<div class="form">';
+  html += '<label>Nama makanan</label>';
+  html += '<input id="m-nama" placeholder="Nasi padang, indomie, dll">';
+  html += '<label>Kalori (kkal)</label>';
+  html += '<input id="m-kkal" type="number" inputmode="decimal" placeholder="0">';
+  html += '<div class="grid-3">';
+  html += '<div><label>Protein (g)</label><input id="m-protein" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>';
+  html += '<div><label>Karbo (g)</label><input id="m-karbo" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>';
+  html += '<div><label>Lemak (g)</label><input id="m-lemak" type="number" inputmode="decimal" step="0.1" placeholder="0"></div>';
+  html += '</div>';
+  html += '<button class="btn-primary btn-block" id="btn-save-manual">+ Tambah ke Tanggal Ini</button>';
+  html += '</div>';
+  sb.innerHTML = html;
+  setTimeout(function(){ var i = document.getElementById('m-nama'); if(i) i.focus(); },60);
 }
 function openSheet(tab){
   document.getElementById('sheet').classList.add('open');
   document.body.style.overflow = 'hidden';
-  document.querySelectorAll('[data-stab]').forEach(b=>b.classList.toggle('active', b.dataset.stab===tab));
+  var tabs = document.querySelectorAll('[data-stab]');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('active', tabs[i].dataset.stab===tab);
   sheetSearchQuery = '';
   if(tab==='bahan') renderSheetBahan();
   else renderSheetManual();
@@ -597,11 +573,12 @@ function closeSheet(){
   document.body.style.overflow = '';
 }
 
-/* ============ VIEW SWITCH ============ */
 function switchView(view){
   currentView = view;
-  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
-  document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  var views = document.querySelectorAll('.view');
+  for(var i=0;i<views.length;i++) views[i].classList.toggle('active', views[i].id==='view-'+view);
+  var btns = document.querySelectorAll('.bottom-nav button');
+  for(var j=0;j<btns.length;j++) btns[j].classList.toggle('active', btns[j].dataset.view===view);
   if(view==='hari') renderHari();
   else if(view==='riwayat') renderRiwayat();
   else if(view==='bahan') renderBahan();
@@ -610,11 +587,11 @@ function switchView(view){
 }
 
 function toast(msg){
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(t._tm);
-  t._tm = setTimeout(()=>t.classList.remove('show'),1800);
+  t._tm = setTimeout(function(){ t.classList.remove('show'); },1800);
 }
 
 function tambahKeHari(item){
@@ -624,15 +601,12 @@ function tambahKeHari(item){
   if(currentView==='hari') renderHari();
 }
 
-/* ============ EVENTS ============ */
-document.addEventListener('click', e=>{
-  const t = e.target;
+document.addEventListener('click', function(e){
+  var t = e.target;
 
-  // bottom nav
-  const nav = t.closest('.bottom-nav button[data-view]');
+  var nav = t.closest('.bottom-nav button[data-view]');
   if(nav){ switchView(nav.dataset.view); return; }
 
-  // date nav
   if(t.id==='prev-day'){
     currentDate = shiftDate(currentDate,-1);
     document.getElementById('date-picker').value = currentDate;
@@ -644,38 +618,35 @@ document.addEventListener('click', e=>{
     renderHari(); return;
   }
 
-  // tambah makanan
   if(t.id==='btn-add'){ openSheet('bahan'); return; }
   if(t.id==='sheet-close' || t.id==='sheet'){ closeSheet(); return; }
 
-  // tab sheet
-  const stab = t.closest('[data-stab]');
+  var stab = t.closest('[data-stab]');
   if(stab){
-    document.querySelectorAll('[data-stab]').forEach(b=>b.classList.toggle('active', b===stab));
+    var tabs = document.querySelectorAll('[data-stab]');
+    for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('active', tabs[i]===stab);
     if(stab.dataset.stab==='bahan') renderSheetBahan();
     else renderSheetManual();
     return;
   }
 
-  // pilih bahan
-  const pick = t.closest('[data-pick]');
+  var pick = t.closest('[data-pick]');
   if(pick){
-    const bahanId = pick.dataset.pick;
-    tambahKeHari({id:uid(),tipe:'bahan',bahanId,gram:100});
+    var bahanId = pick.dataset.pick;
+    tambahKeHari({id:uid(),tipe:'bahan',bahanId:bahanId,gram:100});
     closeSheet();
-    toast('Ditambah 100g — edit gram di list');
+    toast('Ditambah 100g - edit gram di list');
     return;
   }
 
-  // simpan manual
   if(t.id==='btn-save-manual'){
-    const nama = document.getElementById('m-nama').value.trim();
-    const kkal = num(document.getElementById('m-kkal').value);
+    var nama = document.getElementById('m-nama').value.trim();
+    var kkal = num(document.getElementById('m-kkal').value);
     if(!nama){ alert('Isi nama makanan dulu'); return; }
     if(kkal<=0 && !confirm('Kalori 0, lanjut?')) return;
     tambahKeHari({
-      id:uid(),tipe:'manual',nama,
-      kkal,
+      id:uid(),tipe:'manual',nama:nama,
+      kkal:kkal,
       protein:num(document.getElementById('m-protein').value),
       karbo:num(document.getElementById('m-karbo').value),
       lemak:num(document.getElementById('m-lemak').value)
@@ -685,48 +656,45 @@ document.addEventListener('click', e=>{
     return;
   }
 
-  // hapus item dari log
-  const delLog = t.closest('[data-act="del"]');
+  var delLog = t.closest('[data-act="del"]');
   if(delLog){
-    const row = delLog.closest('.log-item');
-    const idx = parseInt(row.dataset.idx);
-    const items = state.log[currentDate]||[];
+    var row = delLog.closest('.log-item');
+    var idx = parseInt(row.dataset.idx);
+    var items = state.log[currentDate]||[];
     items.splice(idx,1);
     save(); renderHari();
     return;
   }
 
-  // tambah bahan baru
   if(t.id==='btn-add-bahan'){
-    const b = {id:uid(),nama:'Bahan baru',kkal:0,protein:0,karbo:0,lemak:0};
-    state.bahan.push(b);
+    var nb = {id:uid(),nama:'Bahan baru',kkal:0,protein:0,karbo:0,lemak:0};
+    state.bahan.push(nb);
     save(); renderBahan();
-    setTimeout(()=>{
-      const inp = document.querySelector('[data-id="'+b.id+'"] .bahan-nama');
+    setTimeout(function(){
+      var inp = document.querySelector('[data-id="'+nb.id+'"] .bahan-nama');
       if(inp){ inp.focus(); inp.select(); }
     },30);
     return;
   }
 
-  // hapus bahan
-  const delBahan = t.closest('[data-act="del-bahan"]');
+  var delBahan = t.closest('[data-act="del-bahan"]');
   if(delBahan){
-    const item = delBahan.closest('.bahan-item');
-    const id = item.dataset.id;
-    const b = state.bahan.find(x=>x.id===id);
-    let used = 0;
-    Object.values(state.log).forEach(arr=>arr.forEach(i=>{ if(i.bahanId===id) used++; }));
-    const msg = used>0
+    var item = delBahan.closest('.bahan-item');
+    var id = item.dataset.id;
+    var b = null;
+    for(var k=0;k<state.bahan.length;k++){ if(state.bahan[k].id===id){ b=state.bahan[k]; break; } }
+    var used = 0;
+    Object.values(state.log).forEach(function(arr){ arr.forEach(function(i){ if(i.bahanId===id) used++; }); });
+    var msg = used>0
       ? '"'+b.nama+'" dipakai di '+used+' catatan. Item itu jadi 0 kkal. Lanjut hapus?'
       : 'Hapus "'+b.nama+'"?';
     if(!confirm(msg)) return;
-    state.bahan = state.bahan.filter(x=>x.id!==id);
+    state.bahan = state.bahan.filter(function(x){ return x.id!==id; });
     save(); renderBahan();
     return;
   }
 
-  // riwayat klik
-  const riw = t.closest('[data-date]');
+  var riw = t.closest('[data-date]');
   if(riw){
     currentDate = riw.dataset.date;
     document.getElementById('date-picker').value = currentDate;
@@ -734,9 +702,8 @@ document.addEventListener('click', e=>{
     return;
   }
 
-  // simpan target
   if(t.id==='btn-save-target'){
-    const v = num(document.getElementById('target-input').value);
+    var v = num(document.getElementById('target-input').value);
     if(v<=0){ alert('Target harus lebih dari 0'); return; }
     state.target = v;
     save();
@@ -744,10 +711,9 @@ document.addEventListener('click', e=>{
     return;
   }
 
-  // export
   if(t.id==='btn-export'){
-    const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-    const a = document.createElement('a');
+    var blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'tracker-makan-'+todayISO()+'.json';
     a.click();
@@ -756,15 +722,13 @@ document.addEventListener('click', e=>{
     return;
   }
 
-  // import
   if(t.id==='btn-import'){
     document.getElementById('file-import').click();
     return;
   }
 
-  // reset
   if(t.id==='btn-reset'){
-    if(!confirm('Reset SEMUA data (bahan + riwayat + target)? Gak bisa dibatalin.')) return;
+    if(!confirm('Reset SEMUA data? Gak bisa dibatalin.')) return;
     state = defaultState();
     save();
     switchView('hari');
@@ -773,38 +737,36 @@ document.addEventListener('click', e=>{
   }
 });
 
-document.addEventListener('input', e=>{
-  const t = e.target;
+document.addEventListener('input', function(e){
+  var t = e.target;
 
-  // gram di log
   if(t.dataset.act==='gram'){
-    const row = t.closest('.log-item');
-    const idx = parseInt(row.dataset.idx);
-    const items = state.log[currentDate]||[];
+    var row = t.closest('.log-item');
+    var idx = parseInt(row.dataset.idx);
+    var items = state.log[currentDate]||[];
     if(items[idx]){
       items[idx].gram = num(t.value);
       save();
-      const h = hitungItem(items[idx]);
-      const info = row.querySelector('.li-makro');
-      if(info) info.innerHTML = `<b>${fmt(h.kkal)}</b> kkal · ${fmt(h.protein)}P · ${fmt(h.karbo)}K · ${fmt(h.lemak)}L`;
+      var h = hitungItem(items[idx]);
+      var info = row.querySelector('.li-makro');
+      if(info) info.innerHTML = '<b>'+fmt(h.kkal)+'</b> kkal &middot; '+fmt(h.protein)+'P &middot; '+fmt(h.karbo)+'K &middot; '+fmt(h.lemak)+'L';
       updateHero();
     }
     return;
   }
 
-  // edit bahan
-  const bahanItem = t.closest('.bahan-item');
+  var bahanItem = t.closest('.bahan-item');
   if(bahanItem && t.dataset.field){
-    const b = state.bahan.find(x=>x.id===bahanItem.dataset.id);
+    var b = null;
+    for(var i=0;i<state.bahan.length;i++){ if(state.bahan[i].id===bahanItem.dataset.id){ b=state.bahan[i]; break; } }
     if(!b) return;
-    const f = t.dataset.field;
+    var f = t.dataset.field;
     if(f==='nama') b.nama = t.value;
     else b[f] = num(t.value);
     save();
     return;
   }
 
-  // search di sheet
   if(t.id==='sheet-search'){
     sheetSearchQuery = t.value;
     renderPickList();
@@ -812,19 +774,19 @@ document.addEventListener('input', e=>{
   }
 });
 
-document.addEventListener('change', e=>{
+document.addEventListener('change', function(e){
   if(e.target.id==='date-picker' && e.target.value){
     currentDate = e.target.value;
     renderHari();
     return;
   }
   if(e.target.id==='file-import'){
-    const f = e.target.files[0];
+    var f = e.target.files[0];
     if(!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+    var reader = new FileReader();
+    reader.onload = function(){
       try{
-        const s = JSON.parse(reader.result);
+        var s = JSON.parse(reader.result);
         if(!s.bahan||!s.log||typeof s.target!=='number') throw new Error('format');
         if(!confirm('Ganti semua data dengan backup ini?')) return;
         state = s;
@@ -840,21 +802,20 @@ document.addEventListener('change', e=>{
   }
 });
 
-// update hero tanpa re-render list
 function updateHero(){
-  const t = totalHari(currentDate);
-  const target = state.target;
-  const sisa = target - t.kkal;
-  const pct = target>0 ? Math.min(100, t.kkal/target*100) : 0;
-  const cls = statusHero(sisa,target);
-  const hero = document.querySelector('.hero');
+  var t = totalHari(currentDate);
+  var target = state.target;
+  var sisa = target - t.kkal;
+  var pct = target>0 ? Math.min(100, t.kkal/target*100) : 0;
+  var cls = statusHero(sisa,target);
+  var hero = document.querySelector('.hero');
   if(!hero) return;
   hero.className = 'hero '+cls;
   hero.querySelector('.hero-angka span').textContent = sisa>=0?fmt(sisa):'-'+fmt(Math.abs(sisa));
-  const bar = hero.querySelector('.hero-bar>div');
+  var bar = hero.querySelector('.hero-bar>div');
   bar.style.width = pct+'%';
   bar.style.background = cls==='over'?'var(--danger)':cls==='warn'?'var(--warn)':'var(--accent)';
-  const stats = hero.querySelectorAll('.hero-stat b');
+  var stats = hero.querySelectorAll('.hero-stat b');
   if(stats.length>=5){
     stats[0].textContent = fmt(t.kkal);
     stats[1].textContent = fmt(target);
@@ -864,7 +825,6 @@ function updateHero(){
   }
 }
 
-/* ============ INIT ============ */
 document.getElementById('date-picker').value = currentDate;
 renderHari();
 
