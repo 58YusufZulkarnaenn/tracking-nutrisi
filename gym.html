@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tracker Gym</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0e1116;--card:#171d26;--card2:#1f2733;--line:#2b3543;
+  --text:#e6edf3;--muted:#8b98a8;--accent:#3ddc97;--blue:#4aa8ff;
+  --warn:#ffb454;--danger:#ff6b6b;--purple:#a78bfa;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+input,button,select,textarea{font:inherit;color:inherit}
+
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden;position:relative}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:270px;
+  background:#141a22;border-right:1px solid var(--line);z-index:100;
+  transform:translateX(-100%);transition:transform .25s ease;
+  display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:4px 0 30px rgba(0,0,0,.5);
+}
+.sidebar.open{transform:translateX(0)}
+.sidebar-head{
+  display:flex;align-items:center;gap:10px;
+  padding:18px 18px 16px;border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.sidebar-head .logo{font-size:26px}
+.sidebar-head h1{font-size:17px;font-weight:700}
+.sidebar-head .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sidebar-nav{flex:1 1 auto;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:4px}
+.sidebar-nav button{
+  display:flex;align-items:center;gap:14px;
+  background:transparent;border:none;color:var(--muted);
+  padding:13px 16px;border-radius:11px;font-size:14.5px;font-weight:600;
+  cursor:pointer;text-align:left;transition:.15s;font-family:inherit;
+}
+.sidebar-nav button:hover{background:var(--card2);color:var(--text)}
+.sidebar-nav button.active{background:rgba(61,220,151,.12);color:var(--accent)}
+.sidebar-nav button .ic{font-size:20px;width:24px;text-align:center;flex-shrink:0}
+.sidebar-nav button .lbl{flex:1}
+.sidebar-foot{
+  flex-shrink:0;padding:14px 18px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:8px;
+}
+#sync-status{font-weight:700;font-size:11px;padding:3px 10px;border-radius:99px;background:var(--card2);transition:.2s}
+#sync-status.ok{color:var(--accent);background:rgba(61,220,151,.12)}
+#sync-status.syncing{color:var(--warn);background:rgba(255,180,84,.12)}
+#sync-status.error{color:var(--danger);background:rgba(255,107,107,.12)}
+
+.sidebar-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;
+  backdrop-filter:blur(2px);
+}
+.sidebar-overlay.open{opacity:1;pointer-events:auto}
+
+/* ===== CONTENT ===== */
+.app-content{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;height:100%;overflow:hidden}
+.topbar{
+  flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 12px;
+  padding-top:calc(10px + env(safe-area-inset-top));
+  background:rgba(14,17,22,.98);border-bottom:1px solid var(--line);z-index:40;
+}
+.menu-btn{
+  background:var(--card2);border:1px solid var(--line);color:var(--text);
+  width:42px;height:42px;border-radius:11px;cursor:pointer;font-size:20px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:.15s;text-decoration:none;
+}
+.menu-btn:hover{background:#2a3441;border-color:var(--accent);color:var(--accent)}
+.topbar-title{flex:1;min-width:0;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 6px}
+.topbar-title small{display:block;font-size:11px;color:var(--muted);font-weight:500}
+
+main{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom) + 40px);
+}
+.view{display:none}
+.view.active{display:block;max-width:640px;margin:0 auto}
+.view-live{padding-bottom:calc(200px + env(safe-area-inset-bottom))}
+
+/* ===== TYPO ===== */
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.section-title .count{background:var(--card2);color:var(--muted);font-size:11px;padding:2px 8px;border-radius:99px;font-weight:700}
+.muted{color:var(--muted);font-size:13px}
+.mb{margin-bottom:12px}
+
+/* ===== CARDS ===== */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card-hover{transition:.15s;cursor:pointer}
+.card-hover:hover{border-color:var(--accent)}
+
+/* ===== PROGRAM CARD ===== */
+.prog-card{
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:18px;margin-bottom:12px;cursor:pointer;transition:.15s;
+  position:relative;
+}
+.prog-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.prog-card.active{border-color:var(--accent);background:rgba(61,220,151,.06)}
+.prog-card h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.prog-card .prog-sub{font-size:12.5px;color:var(--muted)}
+.prog-badge{
+  position:absolute;top:14px;right:14px;
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+  padding:3px 9px;border-radius:99px;
+  background:rgba(61,220,151,.15);color:var(--accent);
+}
+
+/* ===== SESSION CARD ===== */
+.sesi-card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s;
+  display:flex;align-items:center;gap:12px;
+}
+.sesi-card:hover{border-color:var(--accent)}
+.sesi-card .sc-icon{
+  width:44px;height:44px;border-radius:12px;background:var(--card2);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+}
+.sesi-card .sc-body{flex:1;min-width:0}
+.sesi-card .sc-name{font-weight:700;font-size:15px;margin-bottom:2px}
+.sesi-card .sc-sub{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sesi-card .sc-arrow{color:var(--muted);font-size:20px;flex-shrink:0}
+.sesi-card.in-progress{border-color:var(--warn)}
+.sesi-card.in-progress .sc-sub{color:var(--warn);font-weight:600}
+
+/* ===== EXERCISE PICKER ===== */
+.pick-section{margin-bottom:18px}
+.pick-item{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:.15s;
+  display:flex;align-items:center;gap:12px;
+}
+.pick-item:hover{border-color:var(--accent)}
+.pick-item.picked{border-color:var(--accent);background:rgba(61,220,151,.06)}
+.pick-item .pi-order{
+  width:30px;height:30px;border-radius:9px;background:var(--card2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:var(--muted);flex-shrink:0;
+}
+.pick-item.picked .pi-order{background:var(--accent);color:#08130d}
+.pick-item .pi-body{flex:1;min-width:0}
+.pick-item .pi-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.pick-item .pi-meta{font-size:11px;color:var(--muted)}
+.pick-item .pi-plus{
+  width:30px;height:30px;border-radius:8px;background:var(--card2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:var(--muted);flex-shrink:0;
+}
+.pick-item.picked .pi-plus{background:rgba(255,107,107,.15);color:var(--danger)}
+
+/* ===== TIER BADGE ===== */
+.tier{
+  display:inline-block;font-size:10px;font-weight:800;
+  padding:2px 7px;border-radius:6px;letter-spacing:.03em;
+  min-width:20px;text-align:center;
+}
+.tier-S{background:rgba(255,107,107,.2);color:#ff8585}
+.tier-A{background:rgba(61,220,151,.2);color:var(--accent)}
+.tier-B{background:rgba(74,168,255,.2);color:var(--blue)}
+.tier-C{background:rgba(139,152,168,.2);color:var(--muted)}
+
+/* ===== MUSCLE BADGE ===== */
+.musc{
+  display:inline-block;font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:6px;letter-spacing:.02em;
+  background:var(--card2);color:var(--muted);text-transform:uppercase;
+}
+.musc-chest{background:rgba(255,107,107,.12);color:#ff8585}
+.musc-back{background:rgba(74,168,255,.12);color:var(--blue)}
+.musc-shoulder{background:rgba(255,180,84,.12);color:var(--warn)}
+.musc-biceps,.musc-triceps{background:rgba(167,139,250,.12);color:var(--purple)}
+.musc-quads,.musc-hams,.musc-glutes{background:rgba(61,220,151,.12);color:var(--accent)}
+.musc-calves,.musc-core{background:rgba(139,152,168,.15);color:#b5c1d0}
+.musc-traps,.musc-forearm{background:rgba(139,152,168,.15);color:#b5c1d0}
+
+/* ===== BUTTONS ===== */
+.btn-add{
+  width:100%;background:var(--accent);color:#08130d;border:none;
+  padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:inherit;
+}
+.btn-add:active{transform:scale(.98)}
+.btn-primary{
+  background:var(--accent);color:#08130d;border:none;
+  padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer;
+  font-family:inherit;
+}
+.btn-primary.btn-block{width:100%;padding:14px}
+.btn-ghost{
+  background:var(--card2);color:var(--text);border:1px solid var(--line);
+  padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer;
+  width:100%;margin-bottom:8px;text-align:left;font-family:inherit;
+}
+.btn-danger{
+  background:transparent;color:var(--danger);border:1px solid rgba(255,107,107,.4);
+  padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer;
+  width:100%;text-align:left;font-family:inherit;
+}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:8px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+
+.empty{
+  text-align:center;padding:30px 16px;color:var(--muted);
+  font-size:13.5px;background:var(--card);border:1px dashed var(--line);border-radius:12px;
+}
+
+/* ===== SEARCH & FILTER ===== */
+.search-input{
+  width:100%;background:var(--card2);border:1px solid var(--line);
+  color:var(--text);padding:12px 14px;border-radius:10px;
+  font-size:14.5px;margin-bottom:10px;font-family:inherit;
+}
+.search-input:focus{outline:none;border-color:var(--accent)}
+.filter-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.chip{
+  background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  padding:7px 14px;border-radius:99px;font-size:12.5px;font-weight:600;
+  cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;
+}
+.chip.active{background:rgba(61,220,151,.15);color:var(--accent);border-color:var(--accent)}
+
+/* ===== LIVE WORKOUT ===== */
+.live-header{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;
+}
+.live-header .lh-info{flex:1;min-width:0}
+.live-header .lh-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.live-header .lh-time{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.live-header .lh-vol{text-align:right}
+.live-header .lh-vol small{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.live-header .lh-vol b{font-size:18px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+
+.ex-card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px;margin-bottom:12px;
+}
+.ex-card.done{border-color:rgba(61,220,151,.3)}
+.ex-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ex-head .ex-name{flex:1;font-size:14.5px;font-weight:700}
+.ex-head .ex-meta{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
+.ex-sets{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.set-row{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;background:var(--card2);border-radius:9px;
+  font-size:13.5px;font-variant-numeric:tabular-nums;
+}
+.set-row.warmup{opacity:.65}
+.set-row .sr-num{font-weight:800;color:var(--muted);font-size:11px;width:24px}
+.set-row .sr-main{flex:1;font-weight:600}
+.set-row .sr-rir{font-size:11px;color:var(--muted);font-weight:500}
+.set-row .sr-del{
+  width:26px;height:26px;border-radius:7px;background:transparent;
+  border:none;color:var(--muted);cursor:pointer;font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+}
+.set-row .sr-del:hover{background:rgba(255,107,107,.15);color:var(--danger)}
+.ex-add-set{
+  width:100%;background:var(--card2);border:1px dashed var(--line);
+  color:var(--accent);padding:10px;border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+}
+.ex-add-set:hover{border-color:var(--accent);border-style:solid}
+.ex-vol{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11.5px;color:var(--muted);margin-top:8px;font-weight:600;
+}
+.ex-vol b{color:var(--text);font-variant-numeric:tabular-nums}
+.ex-hint{
+  margin-top:8px;padding:8px 12px;border-radius:9px;
+  background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.2);
+  font-size:11.5px;color:var(--accent);font-weight:600;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* ===== STICKY TIMER ===== */
+.timer-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:rgba(14,17,22,.98);border-top:1px solid var(--line);
+  backdrop-filter:blur(10px);
+  display:flex;gap:10px;align-items:center;
+  max-width:640px;margin:0 auto;
+}
+.timer-main{
+  flex:1;background:var(--card2);border:2px solid var(--line);
+  border-radius:14px;padding:10px 14px;cursor:pointer;
+  display:flex;align-items:center;gap:12px;
+  transition:.2s;
+}
+.timer-main.green{border-color:var(--accent);background:rgba(61,220,151,.08)}
+.timer-main.orange{border-color:var(--warn);background:rgba(255,180,84,.08)}
+.timer-main.red{border-color:var(--danger);background:rgba(255,107,107,.08);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.timer-main .tm-info{flex:1;min-width:0}
+.timer-main .tm-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.timer-main .tm-time{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px;line-height:1}
+.timer-main .tm-hint{font-size:10.5px;font-weight:600;margin-top:2px}
+.timer-main .tm-hint.green{color:var(--accent)}
+.timer-main .tm-hint.orange{color:var(--warn)}
+.timer-main .tm-hint.red{color:var(--danger)}
+.timer-presets{display:flex;gap:4px}
+.timer-presets button{
+  background:var(--card2);border:1px solid var(--line);color:var(--muted);
+  padding:8px 10px;border-radius:9px;font-size:12px;font-weight:700;
+  cursor:pointer;min-width:44px;font-family:inherit;
+}
+.timer-presets button.active{background:rgba(61,220,151,.15);color:var(--accent);border-color:var(--accent)}
+.timer-done-btn{
+  background:var(--accent);color:#08130d;border:none;
+  padding:14px 18px;border-radius:12px;font-size:14px;font-weight:800;
+  cursor:pointer;font-family:inherit;
+}
+
+/* ===== RIWAYAT ===== */
+.riwayat-item{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;display:flex;justify-content:space-between;align-items:center;
+  gap:10px;text-align:left;cursor:pointer;width:100%;font-family:inherit;color:var(--text);
+  margin-bottom:8px;
+}
+.riwayat-item:hover{border-color:var(--accent)}
+.ri-nama{font-weight:700;font-size:14px;margin-bottom:2px}
+.ri-sub{font-size:11.5px;color:var(--muted)}
+.ri-vol{text-align:right;flex-shrink:0}
+.ri-vol b{display:block;font-size:16px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.ri-vol small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+
+/* ===== DETAIL RIWAYAT ===== */
+.detail-set{
+  background:var(--card2);border-radius:9px;padding:8px 12px;margin-bottom:6px;
+  display:flex;align-items:center;gap:10px;font-size:13px;font-variant-numeric:tabular-nums;
+}
+.detail-set .ds-num{color:var(--muted);font-weight:800;font-size:11px;width:24px}
+.detail-set .ds-main{flex:1;font-weight:600}
+
+/* ===== STATS ===== */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat-card .sc-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:800;margin-bottom:4px}
+.stat-card .sc-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.stat-card .sc-val small{font-size:13px;color:var(--muted);font-weight:600}
+.stat-card.accent .sc-val{color:var(--accent)}
+
+/* ===== CHART ===== */
+.chart-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.chart-wrap canvas{width:100%;height:180px;display:block}
+
+/* ===== SHEET ===== */
+.sheet-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity .2s,visibility 0s .2s;z-index:9999;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.sheet-backdrop.open{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .2s,visibility 0s 0s}
+.sheet{
+  background:var(--bg);width:100%;max-width:600px;
+  max-height:90vh;max-height:90dvh;
+  border-radius:20px 20px 0 0;display:flex;flex-direction:column;
+  transform:translateY(30px);transition:transform .25s;overflow:hidden;
+  border-top:1px solid var(--line);
+}
+.sheet-backdrop.open .sheet{transform:translateY(0)}
+.sheet-handle{width:40px;height:4px;background:var(--line);border-radius:99px;margin:8px auto 0;flex-shrink:0}
+.sheet-head{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.sheet-title{flex:1;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet-close{background:var(--card2);border:none;color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:14px;flex-shrink:0}
+.sheet-body{
+  padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  overflow-y:auto;overflow-x:hidden;flex:1 1 auto;min-height:0;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+
+/* ===== SET INPUT SHEET ===== */
+.set-input-group{margin-bottom:16px}
+.set-input-group label{display:block;font-size:11.5px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.set-input-stepper{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card2);border:1px solid var(--line);border-radius:12px;
+  padding:6px;
+}
+.set-input-stepper button{
+  background:var(--card);border:none;color:var(--text);
+  width:44px;height:44px;border-radius:10px;font-size:20px;font-weight:700;
+  cursor:pointer;flex-shrink:0;
+}
+.set-input-stepper button:active{background:var(--line)}
+.set-input-stepper .siv{
+  flex:1;text-align:center;font-size:26px;font-weight:800;
+  font-variant-numeric:tabular-nums;letter-spacing:-1px;
+}
+.set-input-stepper .siv small{font-size:14px;color:var(--muted);font-weight:600;margin-left:2px}
+.set-presets{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.set-presets button{
+  background:var(--card2);border:1px solid var(--line);color:var(--text);
+  padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;flex:1;min-width:50px;
+}
+.set-presets button:hover{border-color:var(--accent);color:var(--accent)}
+.rir-row{display:flex;gap:6px;flex-wrap:wrap}
+.rir-row button{
+  background:var(--card2);border:1px solid var(--line);color:var(--text);
+  padding:10px 14px;border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;flex:1;min-width:44px;
+}
+.rir-row button.active{background:rgba(61,220,151,.15);color:var(--accent);border-color:var(--accent)}
+.warmup-row{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--card2);border:1px solid var(--line);border-radius:10px;
+  cursor:pointer;user-select:none;
+}
+.warmup-row .wr-check{
+  width:22px;height:22px;border-radius:6px;border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:13px;color:transparent;transition:.15s;
+}
+.warmup-row.on .wr-check{background:var(--accent);border-color:var(--accent);color:#08130d}
+.warmup-row .wr-label{font-size:13.5px;font-weight:600}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;bottom:calc(140px + env(safe-area-inset-bottom));left:50%;
+  transform:translate(-50%,30px);
+  background:var(--accent);color:#08130d;
+  padding:11px 20px;border-radius:99px;font-weight:700;font-size:13.5px;
+  opacity:0;pointer-events:none;transition:.25s;z-index:99999;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90vw;text-align:center;
+}
+#toast.show{transform:translate(-50%,0);opacity:1}
+
+/* ===== MODAL CONFIRM ===== */
+.modal-bd{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99998;
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-bd.open{display:flex}
+.modal-box{
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:22px;max-width:380px;width:100%;
+}
+.modal-box h3{font-size:16px;font-weight:700;margin-bottom:8px}
+.modal-box p{font-size:13.5px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.modal-box .modal-actions{display:flex;gap:8px}
+.modal-box .modal-actions button{
+  flex:1;padding:12px;border-radius:10px;font-weight:700;cursor:pointer;
+  font-family:inherit;border:none;font-size:14px;
+}
+.modal-box .ma-cancel{background:var(--card2);color:var(--text)}
+.modal-box .ma-confirm{background:var(--danger);color:#fff}
+.modal-box .ma-ok{background:var(--accent);color:#08130d}
+
+/* ===== HINT ===== */
+.hint-bar{
+  background:rgba(74,168,255,.08);border:1px solid rgba(74,168,255,.2);
+  border-radius:10px;padding:10px 12px;margin-bottom:12px;
+  font-size:12px;color:var(--blue);font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span class="logo">🏋️</span>
+      <div>
+        <h1>Tracker Gym</h1>
+        <div class="sub">Program, latihan, progres</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button data-view="home" class="active"><span class="ic">🏠</span><span class="lbl">Home</span></button>
+      <button data-view="riwayat"><span class="ic">📊</span><span class="lbl">Riwayat</span></button>
+      <button data-view="library"><span class="ic">💪</span><span class="lbl">Basis Gerakan</span></button>
+      <button data-view="setting"><span class="ic">⚙️</span><span class="lbl">Setting</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <span id="sync-status">memuat...</span>
+      <span style="margin-left:auto">v1.0</span>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="app-content">
+    <header class="topbar">
+      <a href="/" class="menu-btn" title="Home">🏠</a>
+      <button class="menu-btn" id="menu-btn" title="Menu">☰</button>
+      <div class="topbar-title" id="topbar-title">
+        Home<small>Pilih program</small>
+      </div>
+    </header>
+
+    <main id="main-scroll">
+      <section id="view-home" class="view active"></section>
+      <section id="view-sesi" class="view"></section>
+      <section id="view-live" class="view view-live"></section>
+      <section id="view-riwayat" class="view"></section>
+      <section id="view-detail" class="view"></section>
+      <section id="view-library" class="view"></section>
+      <section id="view-setting" class="view"></section>
+    </main>
+  </div>
+
+</div>
+
+<div id="sheet" class="sheet-backdrop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title" id="sheet-title">Sheet</div>
+      <button class="sheet-close" id="sheet-close">✕</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </div>
+</div>
+
+<div class="modal-bd" id="modal-bd">
+  <div class="modal-box">
+    <h3 id="modal-title">Konfirmasi</h3>
+    <p id="modal-msg">Yakin?</p>
+    <div class="modal-actions">
+      <button class="ma-cancel" id="modal-cancel">Batal</button>
+      <button class="ma-confirm" id="modal-confirm">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   PART 1: KONFIG & DATA
+   ============================================================ */
+
+var API_URL = 'https://tracking-nutrisi.pages.dev';
+var API_SECRET = 'makananharian';
+var KEY = 'trackerGymV1';
+
+/* ---------- LIBRARY GERAKAN ---------- */
+var LIBRARY = [
+  // ============ CHEST ============
+  {id:'bench-press', nama:'Flat Barbell Bench Press', muscle:'chest', muscleLabel:'Chest', equipment:'barbell', compound:true, tier:'S', repMin:5, repMax:8, increment:2.5, note:'Raja upper body. Fokus kontrol turun, dorong explosive.'},
+  {id:'incline-bench', nama:'Incline Barbell Bench Press', muscle:'chest', muscleLabel:'Chest (atas)', equipment:'barbell', compound:true, tier:'S', repMin:6, repMax:10, increment:2.5, note:'Fokus upper chest. Sudut 30-45 derajat.'},
+  {id:'incline-db', nama:'Incline Dumbbell Press', muscle:'chest', muscleLabel:'Chest (atas)', equipment:'dumbbell', compound:true, tier:'A', repMin:8, repMax:12, increment:1, note:'Range of motion lebih dalam dari barbell.'},
+  {id:'flat-db', nama:'Flat Dumbbell Press', muscle:'chest', muscleLabel:'Chest', equipment:'dumbbell', compound:true, tier:'A', repMin:8, repMax:12, increment:1, note:'Stabilizer aktif, ROM lebih bagus.'},
+  {id:'machine-chest', nama:'Machine Chest Press', muscle:'chest', muscleLabel:'Chest', equipment:'machine', compound:true, tier:'B', repMin:10, repMax:15, increment:5, note:'Cocok buat drop set / finishing.'},
+  {id:'cable-fly', nama:'Cable Fly', muscle:'chest', muscleLabel:'Chest', equipment:'cable', compound:false, tier:'B', repMin:12, repMax:15, increment:2.5, note:'Isolasi, squeeze di tengah.'},
+  {id:'pec-deck', nama:'Pec Deck', muscle:'chest', muscleLabel:'Chest', equipment:'machine', compound:false, tier:'B', repMin:12, repMax:15, increment:5, note:'Isolasi aman, cocok pemula.'},
+  {id:'pushup', nama:'Push Up', muscle:'chest', muscleLabel:'Chest', equipment:'bodyweight', compound:true, tier:'B', repMin:12, repMax:25, increment:0, note:'Bodyweight. Bisa tambah beban pake weight vest.'},
+
+  // ============ BACK ============
+  {id:'pullup', nama:'Pull Up', muscle:'back', muscleLabel:'Back (lebar)', equipment:'bodyweight', compound:true, tier:'S', repMin:5, repMax:10, increment:1, note:'King of back width. Kalau belum bisa, pakai band.'},
+  {id:'chinup', nama:'Chin Up', muscle:'back', muscleLabel:'Back (biceps)', equipment:'bodyweight', compound:true, tier:'S', repMin:5, repMax:10, increment:1, note:'Lebih biceps-dominant dari pull up.'},
+  {id:'lat-pulldown-lebar', nama:'Lat Pulldown (Lebar)', muscle:'back', muscleLabel:'Back (lebar)', equipment:'cable', compound:true, tier:'A', repMin:8, repMax:12, increment:5, note:'Fokus tarik pake lats, bukan tangan.'},
+  {id:'lat-pulldown-sempit', nama:'Lat Pulldown (Sempit)', muscle:'back', muscleLabel:'Back (tengah)', equipment:'cable', compound:true, tier:'A', repMin:8, repMax:12, increment:5, note:'Fokus mid-back, squeeze.'},
+  {id:'barbell-row', nama:'Barbell Row', muscle:'back', muscleLabel:'Back (tebal)', equipment:'barbell', compound:true, tier:'S', repMin:6, repMax:10, increment:2.5, note:'Raja back thickness. Punggung netral, jangan bungkuk.'},
+  {id:'cable-row', nama:'Cable Row', muscle:'back', muscleLabel:'Back (tengah)', equipment:'cable', compound:true, tier:'A', repMin:10, repMax:15, increment:5, note:'Stabil, cocok buat volume tinggi.'},
+  {id:'db-row', nama:'Dumbbell Row (1 tangan)', muscle:'back', muscleLabel:'Back (lebar)', equipment:'dumbbell', compound:true, tier:'A', repMin:8, repMax:12, increment:2, note:'Unilateral, bagus buat koreksi imbalance.'},
+  {id:'tbar-row', nama:'T-Bar Row', muscle:'back', muscleLabel:'Back (tebal)', equipment:'barbell', compound:true, tier:'A', repMin:8, repMax:12, increment:2.5, note:'Angle bagus buat mid-back.'},
+  {id:'straight-arm-pd', nama:'Straight Arm Pulldown', muscle:'back', muscleLabel:'Back (lats)', equipment:'cable', compound:false, tier:'B', repMin:12, repMax:15, increment:2.5, note:'Isolasi lats, stretch di atas.'},
+  {id:'face-pull', nama:'Face Pull', muscle:'shoulder', muscleLabel:'Rear delt + rotator', equipment:'cable', compound:false, tier:'B', repMin:12, repMax:20, increment:2.5, note:'Wajib buat kesehatan bahu.'},
+
+  // ============ SHOULDER ============
+  {id:'ohp', nama:'Overhead Press (Barbell)', muscle:'shoulder', muscleLabel:'Shoulder', equipment:'barbell', compound:true, tier:'S', repMin:5, repMax:8, increment:2.5, note:'King of shoulder. Kunci core, jangan hyperextend punggung.'},
+  {id:'db-shoulder-press', nama:'DB Shoulder Press', muscle:'shoulder', muscleLabel:'Shoulder', equipment:'dumbbell', compound:true, tier:'A', repMin:8, repMax:12, increment:1, note:'Lebih aman dari barbell kalau bahu sensitif.'},
+  {id:'machine-shoulder', nama:'Machine Shoulder Press', muscle:'shoulder', muscleLabel:'Shoulder', equipment:'machine', compound:true, tier:'B', repMin:10, repMax:15, increment:5, note:'Cocok buat pemula, path tetap.'},
+  {id:'arnold-press', nama:'Arnold Press', muscle:'shoulder', muscleLabel:'Shoulder (full)', equipment:'dumbbell', compound:true, tier:'B', repMin:8, repMax:12, increment:1, note:'Rotasi bikin 3 kepala deltoid kena.'},
+  {id:'lateral-raise-db', nama:'Lateral Raise (DB)', muscle:'shoulder', muscleLabel:'Side delt', equipment:'dumbbell', compound:false, tier:'A', repMin:12, repMax:20, increment:1, note:'Ringan aja, fokus mind-muscle. Jangan swing.'},
+  {id:'lateral-raise-cable', nama:'Lateral Raise (Cable)', muscle:'shoulder', muscleLabel:'Side delt', equipment:'cable', compound:false, tier:'A', repMin:12, repMax:20, increment:1, note:'Tension konstan, bagus buat pump.'},
+  {id:'rear-delt-fly', nama:'Rear Delt Fly', muscle:'shoulder', muscleLabel:'Rear delt', equipment:'dumbbell', compound:false, tier:'B', repMin:12, repMax:20, increment:1, note:'Wajib kalau sering bench/press, biar bahu seimbang.'},
+  {id:'upright-row', nama:'Upright Row', muscle:'shoulder', muscleLabel:'Traps + side delt', equipment:'barbell', compound:true, tier:'C', repMin:10, repMax:15, increment:2.5, note:'Risiko impingement kalau salah. Hati-hati.'},
+
+  // ============ BICEPS ============
+  {id:'barbell-curl', nama:'Barbell Curl', muscle:'biceps', muscleLabel:'Biceps', equipment:'barbell', compound:false, tier:'A', repMin:8, repMax:12, increment:2.5, note:'Standar. Jangan goyang badan.'},
+  {id:'db-curl', nama:'Dumbbell Curl', muscle:'biceps', muscleLabel:'Biceps', equipment:'dumbbell', compound:false, tier:'B', repMin:10, repMax:15, increment:1, note:'Bisa alternating atau bareng.'},
+  {id:'hammer-curl', nama:'Hammer Curl', muscle:'biceps', muscleLabel:'Biceps + brachialis', equipment:'dumbbell', compound:false, tier:'A', repMin:10, repMax:15, increment:1, note:'Bikin lengan keliatan tebal.'},
+  {id:'preacher-curl', nama:'Preacher Curl', muscle:'biceps', muscleLabel:'Biceps', equipment:'machine', compound:false, tier:'B', repMin:10, repMax:15, increment:2.5, note:'Isolasi bagus, siku terkunci.'},
+  {id:'cable-curl', nama:'Cable Curl', muscle:'biceps', muscleLabel:'Biceps', equipment:'cable', compound:false, tier:'B', repMin:12, repMax:15, increment:2.5, note:'Tension konstan sepanjang ROM.'},
+  {id:'concentration-curl', nama:'Concentration Curl', muscle:'biceps', muscleLabel:'Biceps (peak)', equipment:'dumbbell', compound:false, tier:'C', repMin:12, repMax:15, increment:1, note:'Fokus peak contraction. Niche.'},
+
+  // ============ TRICEPS ============
+  {id:'tricep-pushdown', nama:'Tricep Pushdown', muscle:'triceps', muscleLabel:'Triceps', equipment:'cable', compound:false, tier:'A', repMin:10, repMax:15, increment:2.5, note:'Staple. Siku nempel badan.'},
+  {id:'overhead-tricep', nama:'Overhead Tricep Extension', muscle:'triceps', muscleLabel:'Triceps (long head)', equipment:'cable', compound:false, tier:'A', repMin:10, repMax:15, increment:2.5, note:'Long head paling kena di posisi stretch.'},
+  {id:'skull-crusher', nama:'Skull Crusher', muscle:'triceps', muscleLabel:'Triceps', equipment:'barbell', compound:false, tier:'A', repMin:8, repMax:12, increment:2.5, note:'Mati-matian. Hati-hati siku.'},
+  {id:'close-grip-bench', nama:'Close Grip Bench Press', muscle:'triceps', muscleLabel:'Triceps + chest', equipment:'barbell', compound:true, tier:'A', repMin:6, repMax:10, increment:2.5, note:'Compound triceps. Grip selebar bahu.'},
+  {id:'dips', nama:'Dips', muscle:'triceps', muscleLabel:'Triceps + chest bawah', equipment:'bodyweight', compound:true, tier:'A', repMin:8, repMax:15, increment:2.5, note:'Bisa tambah beban pake belt.'},
+  {id:'tricep-kickback', nama:'Tricep Kickback', muscle:'triceps', muscleLabel:'Triceps', equipment:'dumbbell', compound:false, tier:'C', repMin:12, repMax:15, increment:1, note:'Ringan, tension cuma di ujung.'},
+
+  // ============ QUADS ============
+  {id:'back-squat', nama:'Back Squat', muscle:'quads', muscleLabel:'Quads + glutes', equipment:'barbell', compound:true, tier:'S', repMin:5, repMax:8, increment:2.5, note:'Raja lower body. Safety pin wajib.'},
+  {id:'front-squat', nama:'Front Squat', muscle:'quads', muscleLabel:'Quads', equipment:'barbell', compound:true, tier:'A', repMin:5, repMax:8, increment:2.5, note:'Lebih quad-dominant dari back squat.'},
+  {id:'leg-press', nama:'Leg Press', muscle:'quads', muscleLabel:'Quads + glutes', equipment:'machine', compound:true, tier:'A', repMin:10, repMax:15, increment:5, note:'Aman, cocok buat volume tinggi.'},
+  {id:'hack-squat', nama:'Hack Squat', muscle:'quads', muscleLabel:'Quads', equipment:'machine', compound:true, tier:'A', repMin:8, repMax:12, increment:5, note:'Mesin squat, fokus quads.'},
+  {id:'bulgarian-split', nama:'Bulgarian Split Squat', muscle:'quads', muscleLabel:'Quads + glutes', equipment:'dumbbell', compound:true, tier:'A', repMin:8, repMax:12, increment:2, note:'Unilateral, bikin bokong & kaki solid.'},
+  {id:'walking-lunge', nama:'Walking Lunge', muscle:'quads', muscleLabel:'Quads + glutes', equipment:'dumbbell', compound:true, tier:'B', repMin:10, repMax:15, increment:2, note:'Bakar kalori + latih keseimbangan.'},
+  {id:'leg-ext', nama:'Leg Extension', muscle:'quads', muscleLabel:'Quads', equipment:'machine', compound:false, tier:'B', repMin:12, repMax:15, increment:5, note:'Isolasi quads, bagus buat pump.'},
+
+  // ============ HAMS & GLUTES ============
+  {id:'rdl', nama:'Romanian Deadlift', muscle:'hams', muscleLabel:'Hams + glutes', equipment:'barbell', compound:true, tier:'S', repMin:6, repMax:10, increment:2.5, note:'King of hamstring. Fokus stretch, jangan bulat punggung.'},
+  {id:'deadlift', nama:'Conventional Deadlift', muscle:'hams', muscleLabel:'Full posterior', equipment:'barbell', compound:true, tier:'S', repMin:3, repMax:6, increment:5, note:'Raja semua angkat. Teknik dulu, beban belakangan.'},
+  {id:'hip-thrust', nama:'Hip Thrust', muscle:'glutes', muscleLabel:'Glutes', equipment:'barbell', compound:true, tier:'A', repMin:8, repMax:12, increment:5, note:'Glutes paling kena di sini. Squeeze di atas.'},
+  {id:'leg-curl-lying', nama:'Leg Curl (Lying)', muscle:'hams', muscleLabel:'Hams', equipment:'machine', compound:false, tier:'B', repMin:10, repMax:15, increment:2.5, note:'Isolasi hams, bagus buat knee health.'},
+  {id:'leg-curl-seated', nama:'Leg Curl (Seated)', muscle:'hams', muscleLabel:'Hams', equipment:'machine', compound:false, tier:'B', repMin:10, repMax:15, increment:2.5, note:'Hams lebih stretch di posisi duduk.'},
+  {id:'good-morning', nama:'Good Morning', muscle:'hams', muscleLabel:'Hams + lower back', equipment:'barbell', compound:true, tier:'B', repMin:8, repMax:12, increment:2.5, note:'Ringan aja, teknik wajib.'},
+  {id:'glute-bridge', nama:'Glute Bridge', muscle:'glutes', muscleLabel:'Glutes', equipment:'bodyweight', compound:false, tier:'B', repMin:12, repMax:20, increment:0, note:'Bodyweight. Bisa unilateral.'},
+
+  // ============ CALVES ============
+  {id:'calf-raise-standing', nama:'Standing Calf Raise', muscle:'calves', muscleLabel:'Calves (gastrocnemius)', equipment:'machine', compound:false, tier:'A', repMin:10, repMax:15, increment:5, note:'Full ROM, tahan 1 detik di atas.'},
+  {id:'calf-raise-seated', nama:'Seated Calf Raise', muscle:'calves', muscleLabel:'Calves (soleus)', equipment:'machine', compound:false, tier:'A', repMin:12, repMax:20, increment:5, note:'Soleus lebih kena di posisi duduk.'},
+  {id:'calf-raise-db', nama:'Calf Raise (Dumbbell)', muscle:'calves', muscleLabel:'Calves', equipment:'dumbbell', compound:false, tier:'B', repMin:15, repMax:25, increment:2, note:'Alternatif kalau mesin penuh.'},
+
+  // ============ CORE ============
+  {id:'plank', nama:'Plank', muscle:'core', muscleLabel:'Core', equipment:'bodyweight', compound:false, tier:'A', repMin:30, repMax:60, increment:5, note:'Bukan rep, tapi detik. Kunci glutes.'},
+  {id:'lying-leg-raise', nama:'Lying Leg Raise', muscle:'core', muscleLabel:'Lower abs', equipment:'bodyweight', compound:false, tier:'B', repMin:12, repMax:20, increment:0, note:'Fokus lower abs, jangan goyang.'},
+  {id:'hanging-knee-raise', nama:'Hanging Knee Raise', muscle:'core', muscleLabel:'Lower abs', equipment:'bodyweight', compound:false, tier:'A', repMin:10, repMax:15, increment:0, note:'Kontrol, jangan swing.'},
+  {id:'cable-crunch', nama:'Cable Crunch', muscle:'core', muscleLabel:'Abs', equipment:'cable', compound:false, tier:'B', repMin:12, repMax:20, increment:2.5, note:'Bisa load berat, bagus buat abs tebal.'},
+  {id:'ab-wheel', nama:'Ab Wheel', muscle:'core', muscleLabel:'Full core', equipment:'bodyweight', compound:false, tier:'A', repMin:8, repMax:15, increment:0, note:'Susah tapi efektif. Mulai dari lutut.'},
+  {id:'russian-twist', nama:'Russian Twist', muscle:'core', muscleLabel:'Obliques', equipment:'bodyweight', compound:false, tier:'C', repMin:15, repMax:25, increment:0, note:'Obliques. Jangan pakai beban berat.'},
+  {id:'side-plank', nama:'Side Plank', muscle:'core', muscleLabel:'Obliques', equipment:'bodyweight', compound:false, tier:'B', repMin:20, repMax:45, increment:5, note:'Detik. Buat stability.'},
+
+  // ============ TRAPS & FOREARM ============
+  {id:'barbell-shrug', nama:'Barbell Shrug', muscle:'traps', muscleLabel:'Traps', equipment:'barbell', compound:false, tier:'A', repMin:10, repMax:15, increment:5, note:'Naik-turun pundak aja, jangan muter.'},
+  {id:'db-shrug', nama:'Dumbbell Shrug', muscle:'traps', muscleLabel:'Traps', equipment:'dumbbell', compound:false, tier:'A', repMin:12, repMax:20, increment:2, note:'ROM lebih panjang dari barbell.'},
+  {id:'wrist-curl', nama:'Wrist Curl', muscle:'forearm', muscleLabel:'Forearm', equipment:'dumbbell', compound:false, tier:'C', repMin:15, repMax:25, increment:1, note:'Kecil tapi bikin grip kuat.'},
+  {id:'reverse-curl', nama:'Reverse Curl', muscle:'forearm', muscleLabel:'Forearm + brachialis', equipment:'barbell', compound:false, tier:'B', repMin:12, repMax:15, increment:2.5, note:'Bikin lengan seimbang.'}
+];
+
+/* ---------- PROGRAM TEMPLATES ---------- */
+var PROGRAMS = [
+  {
+    id:'upper-lower',
+    nama:'Upper / Lower',
+    deskripsi:'4 sesi · Rekomendasi dari PT lu · Bench, Squat, RDL fokus strength',
+    icon:'🏋️',
+    sessions:[
+      {
+        id:'upper-a', nama:'Upper A', icon:'🏋️',
+        pool:['bench-press','incline-bench','incline-db','flat-db','machine-chest','cable-fly','pec-deck','pushup','pullup','chinup','lat-pulldown-lebar','lat-pulldown-sempit','barbell-row','cable-row','db-row','tbar-row','straight-arm-pd','face-pull','ohp','db-shoulder-press','machine-shoulder','lateral-raise-db','lateral-raise-cable','tricep-pushdown','overhead-tricep','skull-crusher','close-grip-bench','dips'],
+        defaultPicks:['bench-press','cable-row','db-shoulder-press','lat-pulldown-lebar','tricep-pushdown']
+      },
+      {
+        id:'lower-a', nama:'Lower A', icon:'🦵',
+        pool:['back-squat','front-squat','leg-press','hack-squat','bulgarian-split','walking-lunge','leg-ext','rdl','deadlift','hip-thrust','leg-curl-lying','leg-curl-seated','good-morning','glute-bridge','calf-raise-standing','calf-raise-seated','calf-raise-db','plank','lying-leg-raise','hanging-knee-raise','cable-crunch','ab-wheel'],
+        defaultPicks:['back-squat','leg-press','rdl','calf-raise-standing','plank']
+      },
+      {
+        id:'upper-b', nama:'Upper B', icon:'🏋️',
+        pool:['incline-bench','incline-db','flat-db','machine-chest','cable-fly','pec-deck','pushup','pullup','chinup','lat-pulldown-sempit','lat-pulldown-lebar','cable-row','db-row','tbar-row','straight-arm-pd','face-pull','rear-delt-fly','lateral-raise-db','lateral-raise-cable','preacher-curl','hammer-curl','barbell-curl','db-curl','cable-curl'],
+        defaultPicks:['incline-bench','lat-pulldown-sempit','lateral-raise-db','face-pull','preacher-curl']
+      },
+      {
+        id:'lower-b', nama:'Lower B', icon:'🦵',
+        pool:['rdl','deadlift','back-squat','front-squat','leg-press','hack-squat','bulgarian-split','walking-lunge','leg-ext','hip-thrust','leg-curl-lying','leg-curl-seated','good-morning','glute-bridge','calf-raise-standing','calf-raise-seated','calf-raise-db','lying-leg-raise','hanging-knee-raise','plank','cable-crunch','ab-wheel'],
+        defaultPicks:['rdl','leg-press','hip-thrust','calf-raise-standing','lying-leg-raise']
+      }
+    ]
+  },
+  {
+    id:'ppl',
+    nama:'Push / Pull / Legs',
+    deskripsi:'3 sesi · Fokus hypertrophy · Volume tinggi per muscle group',
+    icon:'💪',
+    sessions:[
+      {
+        id:'push', nama:'Push', icon:'🔥',
+        pool:['bench-press','incline-bench','incline-db','flat-db','machine-chest','cable-fly','pec-deck','pushup','ohp','db-shoulder-press','machine-shoulder','arnold-press','lateral-raise-db','lateral-raise-cable','tricep-pushdown','overhead-tricep','skull-crusher','close-grip-bench','dips','tricep-kickback'],
+        defaultPicks:['bench-press','incline-db','db-shoulder-press','lateral-raise-db','tricep-pushdown']
+      },
+      {
+        id:'pull', nama:'Pull', icon:'🎯',
+        pool:['pullup','chinup','lat-pulldown-lebar','lat-pulldown-sempit','barbell-row','cable-row','db-row','tbar-row','straight-arm-pd','face-pull','rear-delt-fly','barbell-curl','db-curl','hammer-curl','preacher-curl','cable-curl','concentration-curl','barbell-shrug','db-shrug'],
+        defaultPicks:['pullup','barbell-row','cable-row','face-pull','hammer-curl']
+      },
+      {
+        id:'legs', nama:'Legs', icon:'🦵',
+        pool:['back-squat','front-squat','leg-press','hack-squat','bulgarian-split','walking-lunge','leg-ext','rdl','deadlift','hip-thrust','leg-curl-lying','leg-curl-seated','good-morning','glute-bridge','calf-raise-standing','calf-raise-seated','calf-raise-db','plank','lying-leg-raise','hanging-knee-raise','cable-crunch','ab-wheel','side-plank'],
+        defaultPicks:['back-squat','rdl','leg-press','leg-curl-lying','calf-raise-standing']
+      }
+    ]
+  },
+  {
+    id:'full-body',
+    nama:'Full Body',
+    deskripsi:'3 sesi · Semua muscle group tiap sesi · Cocok kalau waktu mepet',
+    icon:'⚡',
+    sessions:[
+      {
+        id:'fb-a', nama:'Full Body A', icon:'⚡',
+        pool:['back-squat','bench-press','barbell-row','ohp','rdl','pullup','dips','lateral-raise-db','plank'],
+        defaultPicks:['back-squat','bench-press','barbell-row','ohp','plank']
+      },
+      {
+        id:'fb-b', nama:'Full Body B', icon:'⚡',
+        pool:['deadlift','incline-bench','lat-pulldown-lebar','db-shoulder-press','leg-press','chinup','bulgarian-split','hammer-curl','hanging-knee-raise'],
+        defaultPicks:['deadlift','incline-bench','lat-pulldown-lebar','db-shoulder-press','hanging-knee-raise']
+      },
+      {
+        id:'fb-c', nama:'Full Body C', icon:'⚡',
+        pool:['front-squat','flat-db','cable-row','arnold-press','hip-thrust','pullup','tricep-pushdown','lateral-raise-cable','ab-wheel'],
+        defaultPicks:['front-squat','flat-db','cable-row','arnold-press','ab-wheel']
+      }
+    ]
+  }
+];
+
+/* ============================================================
+   PART 2: STATE, SYNC, RENDER, LOGIC
+   ============================================================ */
+
+/* ---------- UTILITIES ---------- */
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function round1(v){ return Math.round((Number(v)||0)*10)/10; }
+function fmt(v){ return round1(v).toLocaleString('id-ID',{maximumFractionDigits:1}); }
+function num(v){ var n = parseFloat(String(v).replace(',','.')); return isNaN(n)?0:n; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function formatTanggal(iso){
+  var d = new Date(iso+'T00:00:00');
+  var hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return hari[d.getDay()]+', '+d.getDate()+' '+bulan[d.getMonth()]+' '+d.getFullYear();
+}
+function formatTanggalShort(iso){
+  var d = new Date(iso+'T00:00:00');
+  var hari = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  var bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return hari[d.getDay()]+', '+d.getDate()+' '+bulan[d.getMonth()]+' '+d.getFullYear();
+}
+function formatDurasi(ms){
+  var s = Math.floor(ms/1000);
+  var m = Math.floor(s/60);
+  var h = Math.floor(m/60);
+  if(h>0) return h+'j '+(m%60)+'m';
+  if(m>0) return m+'m';
+  return s+'s';
+}
+function formatMMSS(sec){
+  var m = Math.floor(sec/60);
+  var s = Math.floor(sec%60);
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function getEx(id){
+  for(var i=0;i<state.exercises.length;i++){ if(state.exercises[i].id===id) return state.exercises[i]; }
+  return null;
+}
+function findProgram(id){
+  for(var i=0;i<PROGRAMS.length;i++){ if(PROGRAMS[i].id===id) return PROGRAMS[i]; }
+  for(var j=0;j<state.customPrograms.length;j++){ if(state.customPrograms[j].id===id) return state.customPrograms[j]; }
+  return null;
+}
+function findSession(programId, sessionId){
+  var p = findProgram(programId);
+  if(!p) return null;
+  for(var i=0;i<p.sessions.length;i++){ if(p.sessions[i].id===sessionId) return p.sessions[i]; }
+  return null;
+}
+
+/* ---------- STATE ---------- */
+function defaultState(){
+  return {
+    version:1,
+    lastModified:0,
+    activeProgramId:null,
+    customPrograms:[],
+    exercises:LIBRARY.slice(),
+    history:{},
+    liveWorkout:null,
+    sessionDrafts:{},
+    prefs:{restDefault:120, wakeLock:true, autoStartRest:false, soundOn:true}
+  };
+}
+var state = defaultState();
+
+/* ---------- SYNC ---------- */
+function setSyncStatus(s){
+  var el = document.getElementById('sync-status');
+  if(!el) return;
+  el.textContent = s==='ok' ? 'tersinkron' : s==='syncing' ? 'sync...' : s==='error' ? 'gagal sync' : 'memuat...';
+  el.className = s==='ok' ? 'ok' : s==='syncing' ? 'syncing' : s==='error' ? 'error' : '';
+}
+function loadLocal(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){
+      var s = JSON.parse(raw);
+      if(s && s.exercises && s.history && s.prefs) return s;
+    }
+  }catch(e){}
+  return null;
+}
+async function loadFromCloud(){
+  try{
+    var res = await fetch(API_URL + '/api/gym/load', { headers: { 'X-Secret': API_SECRET } });
+    if(!res.ok) return null;
+    var data = await res.json();
+    if(data && data.exercises && data.history) return data;
+  }catch(e){}
+  return null;
+}
+async function pushToCloud(){
+  setSyncStatus('syncing');
+  try{
+    var res = await fetch(API_URL + '/api/gym/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Secret': API_SECRET },
+      body: JSON.stringify(state)
+    });
+    setSyncStatus(res.ok ? 'ok' : 'error');
+  }catch(e){
+    setSyncStatus('error');
+  }
+}
+var saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  state.lastModified = Date.now();
+  saveTimer = setTimeout(function(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+    pushToCloud();
+  }, 600);
+}
+
+/* ---------- AUDIO (BEEP) ---------- */
+var audioCtx = null;
+function playBeep(){
+  if(!state.prefs.soundOn) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    var now = audioCtx.currentTime;
+    var times = [0, 0.25, 0.5];
+    times.forEach(function(off){
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.0001, now+off);
+      gain.gain.exponentialRampToValueAtTime(0.35, now+off+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now+off+0.18);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now+off);
+      osc.stop(now+off+0.2);
+    });
+  }catch(e){}
+}
+function vibrate(ms){
+  try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){}
+}
+
+/* ---------- WAKE LOCK ---------- */
+var wakeLockSentinel = null;
+async function requestWakeLock(){
+  if(!state.prefs.wakeLock) return;
+  try{
+    if('wakeLock' in navigator && !wakeLockSentinel){
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', function(){ wakeLockSentinel = null; });
+    }
+  }catch(e){}
+}
+function releaseWakeLock(){
+  try{ if(wakeLockSentinel){ wakeLockSentinel.release(); wakeLockSentinel = null; } }catch(e){}
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible' && state.liveWorkout){
+    requestWakeLock();
+  }
+});
+
+/* ---------- TOAST / MODAL / SHEET ---------- */
+var toastTm;
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTm);
+  toastTm = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+var modalCb = null;
+function openModal(title, msg, confirmLabel, cb){
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-confirm').textContent = confirmLabel || 'Hapus';
+  modalCb = cb;
+  document.getElementById('modal-bd').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modal-bd').classList.remove('open');
+  modalCb = null;
+}
+
+function openSheet(title, html){
+  document.getElementById('sheet-title').textContent = title;
+  document.getElementById('sheet-body').innerHTML = html;
+  document.getElementById('sheet').classList.add('open');
+}
+function closeSheet(){
+  document.getElementById('sheet').classList.remove('open');
+  document.getElementById('sheet-body').innerHTML = '';
+}
+
+/* ---------- SIDEBAR ---------- */
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+function toggleSidebar(){ document.getElementById('sidebar').classList.contains('open') ? closeSidebar() : openSidebar(); }
+
+/* ---------- NAVIGATION ---------- */
+var currentView = 'home';
+var viewParams = {};
+
+function switchView(view, params){
+  viewParams = params || {};
+  currentView = view;
+  var views = document.querySelectorAll('.view');
+  for(var i=0;i<views.length;i++) views[i].classList.toggle('active', views[i].id==='view-'+view);
+  var btns = document.querySelectorAll('.sidebar-nav button');
+  for(var j=0;j<btns.length;j++){
+    var v = btns[j].dataset.view;
+    var active = (v===view) || (view==='sesi' && v==='home') || (view==='live' && v==='home') || (view==='detail' && v==='riwayat');
+    btns[j].classList.toggle('active', active);
+  }
+  setTopbarTitle(view);
+  renderView(view);
+  var m = document.getElementById('main-scroll');
+  if(m) m.scrollTop = 0;
+  closeSidebar();
+  updateTimerBarVisibility();
+}
+function setTopbarTitle(view){
+  var el = document.getElementById('topbar-title');
+  var titles = {
+    home:['Home','Pilih program'],
+    sesi:['Sesi','Pilih gerakan'],
+    live:['Live Workout','Sedang jalan'],
+    riwayat:['Riwayat','Log latihan'],
+    detail:['Detail Sesi',''],
+    library:['Basis Gerakan','Library'],
+    setting:['Setting','Preferensi']
+  };
+  var t = titles[view] || ['',''];
+  el.innerHTML = esc(t[0]) + (t[1] ? '<small>'+esc(t[1])+'</small>' : '');
+}
+function renderView(view){
+  if(view==='home') renderHome();
+  else if(view==='sesi') renderSesi();
+  else if(view==='live') renderLive();
+  else if(view==='riwayat') renderRiwayat();
+  else if(view==='detail') renderDetail();
+  else if(view==='library') renderLibrary();
+  else if(view==='setting') renderSetting();
+}
+
+/* ============================================================
+   RENDER: HOME
+   ============================================================ */
+function renderHome(){
+  var el = document.getElementById('view-home');
+  var html = '';
+
+  if(state.liveWorkout){
+    html += '<div class="hint-bar">⚡ Ada sesi yang belum kelar. <b style="margin-left:auto;cursor:pointer" data-act="resume-live">Lanjut →</b></div>';
+  }
+
+  // Active program
+  if(!state.activeProgramId){
+    html += '<div class="section-title">Pilih Program</div>';
+    html += '<div class="muted mb">Pilih template, atau bikin custom sendiri. Gerakan tiap sesi bisa lu ubah-ubah.</div>';
+    PROGRAMS.forEach(function(p){
+      html += '<div class="prog-card" data-act="pick-program" data-id="'+p.id+'">';
+      html += '<h3>'+esc(p.icon+' '+p.nama)+'</h3>';
+      html += '<div class="prog-sub">'+esc(p.deskripsi)+'</div>';
+      html += '</div>';
+    });
+    if(state.customPrograms.length){
+      html += '<div class="section-title" style="margin-top:20px">Program Custom</div>';
+      state.customPrograms.forEach(function(p){
+        html += '<div class="prog-card" data-act="pick-program" data-id="'+p.id+'">';
+        html += '<h3>'+esc(p.icon+' '+p.nama)+'</h3>';
+        html += '<div class="prog-sub">'+esc(p.deskripsi)+'</div>';
+        html += '</div>';
+      });
+    }
+    el.innerHTML = html;
+    return;
+  }
+
+  // With active program
+  var p = findProgram(state.activeProgramId);
+  if(!p){ state.activeProgramId = null; renderHome(); return; }
+
+  html += '<div class="prog-card active">';
+  html += '<div class="prog-badge">AKTIF</div>';
+  html += '<h3>'+esc(p.icon+' '+p.nama)+'</h3>';
+  html += '<div class="prog-sub">'+p.sessions.length+' sesi · '+esc(p.deskripsi)+'</div>';
+  html += '<button class="btn-sm" style="margin-top:12px;background:var(--card2);color:var(--muted);border:1px solid var(--line)" data-act="change-program">Ganti Program</button>';
+  html += '</div>';
+
+  html += '<div class="section-title" style="margin-top:8px">Sesi</div>';
+
+  // Sort sessions by last done (recent first)
+  var sessionsWithDate = p.sessions.map(function(s){
+    var lastDate = null;
+    var keys = Object.keys(state.history).sort().reverse();
+    for(var i=0;i<keys.length;i++){
+      if(state.history[keys[i]].sessionId === s.id){ lastDate = keys[i]; break; }
+    }
+    return { sesi:s, lastDate:lastDate };
+  });
+
+  sessionsWithDate.forEach(function(item){
+    var s = item.sesi;
+    var inProgress = state.liveWorkout && state.liveWorkout.sessionId === s.id;
+    var cls = 'sesi-card' + (inProgress ? ' in-progress' : '');
+    var sub;
+    if(inProgress){
+      sub = '⏸️ Sedang jalan · tap buat lanjut';
+    } else if(item.lastDate){
+      var w = state.history[item.lastDate];
+      sub = 'Terakhir: '+formatTanggalShort(item.lastDate)+' · '+w.sets.length+' set · '+fmt(w.totalVolume||0)+' kg';
+    } else {
+      sub = 'Belum pernah';
+    }
+    html += '<div class="'+cls+'" data-act="open-sesi" data-prog="'+p.id+'" data-sesi="'+s.id+'">';
+    html += '<div class="sc-icon">'+s.icon+'</div>';
+    html += '<div class="sc-body"><div class="sc-name">'+esc(s.nama)+'</div><div class="sc-sub">'+esc(sub)+'</div></div>';
+    html += '<div class="sc-arrow">›</div>';
+    html += '</div>';
+  });
+
+  html += '<div style="margin-top:20px"><button class="btn-ghost" data-act="go-riwayat">📊 Lihat Riwayat Latihan</button></div>';
+
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: SESI (pilih gerakan)
+   ============================================================ */
+var sesiFilterMuscle = 'all';
+var sesiSearch = '';
+
+function renderSesi(){
+  var el = document.getElementById('view-sesi');
+  var progId = viewParams.programId;
+  var sesiId = viewParams.sessionId;
+  var p = findProgram(progId);
+  var s = findSession(progId, sesiId);
+  if(!p || !s){ switchView('home'); return; }
+
+  // Load picks: draft > default
+  if(!viewParams.picks){
+    var draft = state.sessionDrafts[sesiId];
+    viewParams.picks = (draft && draft.length) ? draft.slice() : (s.defaultPicks || []).slice();
+  }
+  var picks = viewParams.picks;
+
+  var html = '';
+  html += '<div class="hint-bar">👆 Tap gerakan buat milih/ngilangin. Urutan bisa diubah pakai ↑↓.</div>';
+
+  // ===== DIPILIH =====
+  html += '<div class="section-title">Dipilih <span class="count">'+picks.length+'</span></div>';
+  if(picks.length === 0){
+    html += '<div class="empty" style="margin-bottom:14px">Belum ada gerakan. Pilih dari library di bawah.</div>';
+  } else {
+    picks.forEach(function(exId, idx){
+      var ex = getEx(exId);
+      if(!ex) return;
+      html += '<div class="pick-item picked">';
+      html += '<div class="pi-order">'+(idx+1)+'</div>';
+      html += '<div class="pi-body">';
+      html += '<div class="pi-name">'+esc(ex.nama)+' <span class="tier tier-'+ex.tier+'">'+ex.tier+'</span></div>';
+      html += '<div class="pi-meta"><span class="musc musc-'+ex.muscle+'">'+esc(ex.muscleLabel)+'</span> · Target '+ex.repMin+'-'+ex.repMax+' rep</div>';
+      html += '</div>';
+      html += '<button class="btn-sm" style="background:var(--card2);color:var(--text);margin-right:4px" data-act="move-up" data-idx="'+idx+'">↑</button>';
+      html += '<button class="btn-sm" style="background:var(--card2);color:var(--text);margin-right:4px" data-act="move-down" data-idx="'+idx+'">↓</button>';
+      html += '<button class="btn-sm" style="background:rgba(255,107,107,.15);color:var(--danger)" data-act="unpick" data-id="'+exId+'">✕</button>';
+      html += '</div>';
+    });
+  }
+
+  // ===== TAMBAH =====
+  html += '<div class="section-title" style="margin-top:18px">Tambah dari Library</div>';
+  html += '<input class="search-input" id="sesi-search" placeholder="Cari gerakan..." value="'+esc(sesiSearch)+'">';
+
+  var muscles = ['all','chest','back','shoulder','biceps','triceps','quads','hams','glutes','calves','core','traps'];
+  var mLabels = {all:'Semua',chest:'Chest',back:'Back',shoulder:'Shoulder',biceps:'Biceps',triceps:'Triceps',quads:'Quads',hams:'Hams',glutes:'Glutes',calves:'Calves',core:'Core',traps:'Traps'};
+  html += '<div class="filter-row">';
+  muscles.forEach(function(m){
+    html += '<button class="chip'+(sesiFilterMuscle===m?' active':'')+'" data-act="filter-musc" data-m="'+m+'">'+mLabels[m]+'</button>';
+  });
+  html += '</div>';
+
+  // Get pool exercises (from session pool, exclude already picked)
+  var poolIds = s.pool && s.pool.length ? s.pool : state.exercises.map(function(x){return x.id;});
+  var q = sesiSearch.toLowerCase();
+  var available = poolIds
+    .filter(function(id){ return picks.indexOf(id) === -1; })
+    .map(getEx)
+    .filter(function(ex){
+      if(!ex) return false;
+      if(sesiFilterMuscle !== 'all' && ex.muscle !== sesiFilterMuscle) return false;
+      if(q && ex.nama.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+
+  if(available.length === 0){
+    html += '<div class="empty">Nggak ada gerakan yang cocok. Coba filter lain atau cari manual.</div>';
+  } else {
+    available.forEach(function(ex){
+      html += '<div class="pick-item" data-act="pick" data-id="'+ex.id+'">';
+      html += '<div class="pi-body">';
+      html += '<div class="pi-name">'+esc(ex.nama)+' <span class="tier tier-'+ex.tier+'">'+ex.tier+'</span></div>';
+      html += '<div class="pi-meta"><span class="musc musc-'+ex.muscle+'">'+esc(ex.muscleLabel)+'</span> · '+esc(ex.equipment)+' · '+ex.repMin+'-'+ex.repMax+' rep</div>';
+      html += '</div>';
+      html += '<div class="pi-plus">+</div>';
+      html += '</div>';
+    });
+  }
+
+  // ===== AKSI =====
+  html += '<div style="margin-top:20px">';
+  html += '<button class="btn-ghost" data-act="save-default">💾 Simpen jadi Default Sesi</button>';
+  html += '<button class="btn-add" data-act="start-session" style="margin-top:8px">▶️ Mulai Sesi ('+picks.length+' gerakan)</button>';
+  html += '<div style="height:30px"></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: LIVE WORKOUT
+   ============================================================ */
+function renderLive(){
+  var el = document.getElementById('view-live');
+  var lw = state.liveWorkout;
+  if(!lw){ switchView('home'); return; }
+
+  var totalVol = 0;
+  lw.sets.forEach(function(s){ if(!s.warmup) totalVol += (s.beban||0) * (s.rep||0); });
+
+  var html = '';
+  html += '<div class="live-header">';
+  html += '<div class="lh-info">';
+  html += '<div class="lh-title">'+esc(lw.sessionName)+'</div>';
+  html += '<div class="lh-time">⏱ <span id="live-clock">'+formatDurasi(Date.now()-lw.startTime)+'</span> · '+lw.sets.length+' set</div>';
+  html += '</div>';
+  html += '<div class="lh-vol"><small>Volume</small><b id="live-vol">'+fmt(totalVol)+'</b></div>';
+  html += '</div>';
+
+  // Set per exercise
+  lw.exercises.forEach(function(exId){
+    var ex = getEx(exId);
+    if(!ex) return;
+    var exSets = lw.sets.filter(function(s){ return s.exerciseId === exId; });
+    var workingSets = exSets.filter(function(s){ return !s.warmup; });
+    var exVol = workingSets.reduce(function(a,s){ return a + (s.beban||0)*(s.rep||0); }, 0);
+    var allDone = workingSets.length > 0;
+
+    html += '<div class="ex-card'+(allDone?' done':'')+'">';
+    html += '<div class="ex-head">';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div class="ex-name">'+esc(ex.nama)+' <span class="tier tier-'+ex.tier+'">'+ex.tier+'</span></div>';
+    html += '<div class="ex-meta"><span class="musc musc-'+ex.muscle+'">'+esc(ex.muscleLabel)+'</span> · '+esc(ex.equipment)+'</div>';
+    html += '</div>';
+    html += '</div>';
+
+    if(exSets.length){
+      html += '<div class="ex-sets">';
+      var workIdx = 0;
+      exSets.forEach(function(s, sIdx){
+        var label = s.warmup ? 'W' : (++workIdx);
+        html += '<div class="set-row'+(s.warmup?' warmup':'')+'">';
+        html += '<span class="sr-num">'+label+'</span>';
+        html += '<span class="sr-main">'+fmt(s.beban)+' kg × '+s.rep+'</span>';
+        html += '<span class="sr-rir">RIR '+(s.rir==null?'-':s.rir)+'</span>';
+        var globalIdx = lw.sets.indexOf(s);
+        html += '<button class="sr-del" data-act="del-set" data-idx="'+globalIdx+'">✕</button>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Auto-reg hint
+    var hint = getAutoRegHint(exId, lw);
+    if(hint){
+      html += '<div class="ex-hint">💡 '+esc(hint)+'</div>';
+    }
+
+    if(exVol > 0){
+      html += '<div class="ex-vol"><span>Volume gerakan</span><b>'+fmt(exVol)+' kg</b></div>';
+    }
+
+    html += '<button class="ex-add-set" data-act="add-set" data-id="'+exId+'" style="margin-top:10px">+ Tambah Set</button>';
+    html += '</div>';
+  });
+
+  html += '<div style="margin-top:20px">';
+  html += '<button class="btn-ghost" data-act="add-ex-live">➕ Tambah Gerakan</button>';
+  html += '<button class="btn-danger" data-act="cancel-live" style="margin-top:8px">⏹ Batalkan Sesi</button>';
+  html += '<button class="btn-add" data-act="finish-live" style="margin-top:8px;background:var(--blue);color:#fff">✓ Selesai Sesi</button>';
+  html += '<div style="height:30px"></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+function getAutoRegHint(exId, lw){
+  var ex = getEx(exId);
+  if(!ex) return null;
+  var workingSets = lw.sets.filter(function(s){ return s.exerciseId===exId && !s.warmup; });
+  if(workingSets.length === 0) return null;
+  // All sets reached repMax AND last RIR >= 2
+  var allMaxed = workingSets.every(function(s){ return s.rep >= ex.repMax; });
+  var lastRIR = workingSets[workingSets.length-1].rir;
+  if(!allMaxed) return null;
+  if(lastRIR == null || lastRIR < 2) return null;
+  var lastWeight = workingSets[workingSets.length-1].beban || 0;
+  var next = lastWeight + (ex.increment || 2.5);
+  return 'Semua set mentok '+ex.repMax+' rep, RIR ≥ 2. Coba naik ke '+fmt(next)+' kg minggu depan.';
+}
+
+/* ============================================================
+   RENDER: RIWAYAT
+   ============================================================ */
+function renderRiwayat(){
+  var el = document.getElementById('view-riwayat');
+  var dates = Object.keys(state.history).sort().reverse();
+
+  if(dates.length === 0){
+    el.innerHTML = '<div class="empty">Belum ada riwayat latihan. Mulai sesi pertama lu!</div>';
+    return;
+  }
+
+  // Stats
+  var totalVol = 0, totalSets = 0;
+  var thisWeekStart = (function(){
+    var d = new Date(); var day = d.getDay();
+    var diff = day===0 ? 6 : day-1; // Senin = awal minggu
+    d.setDate(d.getDate()-diff); d.setHours(0,0,0,0);
+    return d.getTime();
+  })();
+  var thisWeekCount = 0;
+  dates.forEach(function(d){
+    var w = state.history[d];
+    totalVol += w.totalVolume || 0;
+    totalSets += w.sets.length;
+    if(new Date(d+'T00:00:00').getTime() >= thisWeekStart) thisWeekCount++;
+  });
+
+  var html = '';
+  html += '<div class="stats-grid">';
+  html += '<div class="stat-card accent"><div class="sc-label">Total Sesi</div><div class="sc-val">'+dates.length+'</div></div>';
+  html += '<div class="stat-card"><div class="sc-label">Minggu Ini</div><div class="sc-val">'+thisWeekCount+'</div></div>';
+  html += '<div class="stat-card"><div class="sc-label">Total Volume</div><div class="sc-val">'+fmt(totalVol)+' <small>kg</small></div></div>';
+  html += '<div class="stat-card"><div class="sc-label">Total Set</div><div class="sc-val">'+totalSets+'</div></div>';
+  html += '</div>';
+
+  html += '<div class="section-title">Log Latihan</div>';
+
+  dates.forEach(function(d){
+    var w = state.history[d];
+    html += '<div class="riwayat-item" data-act="open-detail" data-date="'+d+'">';
+    html += '<div>';
+    html += '<div class="ri-nama">'+esc(w.sessionName)+'</div>';
+    html += '<div class="ri-sub">'+esc(formatTanggalShort(d))+' · '+w.sets.length+' set · '+esc(formatDurasi(w.duration||0))+'</div>';
+    html += '</div>';
+    html += '<div class="ri-vol"><b>'+fmt(w.totalVolume||0)+'</b><small>kg</small></div>';
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: DETAIL SESI
+   ============================================================ */
+function renderDetail(){
+  var el = document.getElementById('view-detail');
+  var date = viewParams.date;
+  var w = state.history[date];
+  if(!w){ switchView('riwayat'); return; }
+
+  var html = '';
+  html += '<div class="card">';
+  html += '<div class="section-title">'+esc(w.sessionName)+'</div>';
+  html += '<div class="muted mb">'+esc(formatTanggal(date))+'</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">';
+  html += '<div><div class="sc-label" style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:800">Durasi</div><div style="font-weight:800;font-size:16px">'+esc(formatDurasi(w.duration||0))+'</div></div>';
+  html += '<div><div class="sc-label" style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:800">Volume</div><div style="font-weight:800;font-size:16px;color:var(--accent)">'+fmt(w.totalVolume||0)+' kg</div></div>';
+  html += '<div><div class="sc-label" style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:800">Set</div><div style="font-weight:800;font-size:16px">'+w.sets.length+'</div></div>';
+  html += '</div></div>';
+
+  // Group by exercise
+  var groups = {};
+  w.sets.forEach(function(s){
+    if(!groups[s.exerciseId]) groups[s.exerciseId] = { name:s.exerciseName, sets:[] };
+    groups[s.exerciseId].sets.push(s);
+  });
+
+  Object.keys(groups).forEach(function(exId){
+    var g = groups[exId];
+    var ex = getEx(exId);
+    var workingSets = g.sets.filter(function(s){ return !s.warmup; });
+    var exVol = workingSets.reduce(function(a,s){ return a+(s.beban||0)*(s.rep||0); }, 0);
+
+    html += '<div class="card">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<div style="font-weight:700;font-size:14px">'+esc(g.name)+(ex?' <span class="tier tier-'+ex.tier+'">'+ex.tier+'</span>':'')+'</div>';
+    html += '<div style="font-size:12px;color:var(--muted);font-weight:700">'+fmt(exVol)+' kg</div>';
+    html += '</div>';
+    var workIdx = 0;
+    g.sets.forEach(function(s){
+      var label = s.warmup ? 'Warmup' : 'Set '+(++workIdx);
+      html += '<div class="detail-set">';
+      html += '<span class="ds-num">'+label+'</span>';
+      html += '<span class="ds-main">'+fmt(s.beban)+' kg × '+s.rep+' rep</span>';
+      html += '<span style="font-size:11px;color:var(--muted)">RIR '+(s.rir==null?'-':s.rir)+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  if(w.notes){
+    html += '<div class="card"><div class="section-title">Catatan</div><div class="muted">'+esc(w.notes)+'</div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: LIBRARY
+   ============================================================ */
+var libFilterMuscle = 'all';
+var libSearch = '';
+
+function renderLibrary(){
+  var el = document.getElementById('view-library');
+  var html = '';
+  html += '<div class="section-title">Basis Gerakan <span class="count">'+state.exercises.length+'</span></div>';
+  html += '<div class="muted mb">Library gerakan. Semua bisa lu edit. Tier S = terbaik, C = kurang optimal.</div>';
+
+  html += '<input class="search-input" id="lib-search" placeholder="Cari gerakan..." value="'+esc(libSearch)+'">';
+
+  var muscles = ['all','chest','back','shoulder','biceps','triceps','quads','hams','glutes','calves','core','traps','forearm'];
+  var mLabels = {all:'Semua',chest:'Chest',back:'Back',shoulder:'Shoulder',biceps:'Biceps',triceps:'Triceps',quads:'Quads',hams:'Hams',glutes:'Glutes',calves:'Calves',core:'Core',traps:'Traps',forearm:'Forearm'};
+  html += '<div class="filter-row">';
+  muscles.forEach(function(m){
+    html += '<button class="chip'+(libFilterMuscle===m?' active':'')+'" data-act="lib-filter" data-m="'+m+'">'+mLabels[m]+'</button>';
+  });
+  html += '</div>';
+
+  var q = libSearch.toLowerCase();
+  var filtered = state.exercises.filter(function(ex){
+    if(libFilterMuscle !== 'all' && ex.muscle !== libFilterMuscle) return false;
+    if(q && ex.nama.toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+
+  // Group by muscle
+  var groups = {};
+  filtered.forEach(function(ex){
+    if(!groups[ex.muscle]) groups[ex.muscle] = [];
+    groups[ex.muscle].push(ex);
+  });
+
+  Object.keys(groups).sort().forEach(function(m){
+    html += '<div class="section-title" style="margin-top:16px">'+mLabels[m]+' ('+groups[m].length+')</div>';
+    groups[m].sort(function(a,b){
+      var order = {S:0,A:1,B:2,C:3};
+      return (order[a.tier]||9) - (order[b.tier]||9);
+    }).forEach(function(ex){
+      html += '<div class="pick-item" style="cursor:default">';
+      html += '<div class="pi-body">';
+      html += '<div class="pi-name">'+esc(ex.nama)+' <span class="tier tier-'+ex.tier+'">'+ex.tier+'</span></div>';
+      html += '<div class="pi-meta"><span class="musc musc-'+ex.muscle+'">'+esc(ex.muscleLabel)+'</span> · '+esc(ex.equipment)+' · '+ex.repMin+'-'+ex.repMax+' rep</div>';
+      if(ex.note) html += '<div style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic">'+esc(ex.note)+'</div>';
+      html += '</div>';
+      html += '<button class="btn-sm" style="background:var(--card2);color:var(--text)" data-act="edit-ex" data-id="'+ex.id+'">✎</button>';
+      html += '</div>';
+    });
+  });
+
+  html += '<div style="margin-top:20px"><button class="btn-add" data-act="new-ex">+ Tambah Gerakan Baru</button></div>';
+  html += '<div style="height:30px"></div>';
+
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   RENDER: SETTING
+   ============================================================ */
+function renderSetting(){
+  var el = document.getElementById('view-setting');
+  var html = '';
+  html += '<div class="card">';
+  html += '<div class="section-title">Preferensi Latihan</div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  html += '<div><div style="font-weight:700;font-size:14px">Istirahat Default</div><div style="font-size:11.5px;color:var(--muted)">Target beep timer (detik)</div></div>';
+  html += '<input type="number" id="pref-rest" value="'+state.prefs.restDefault+'" style="width:80px;background:var(--card2);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:9px;text-align:right;font-weight:700;font-family:inherit">';
+  html += '</div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  html += '<div><div style="font-weight:700;font-size:14px">Wake Lock</div><div style="font-size:11.5px;color:var(--muted)">Layar tetap nyala saat sesi</div></div>';
+  html += '<button id="pref-wake" class="chip'+(state.prefs.wakeLock?' active':'')+'" style="min-width:70px;text-align:center">'+(state.prefs.wakeLock?'ON':'OFF')+'</button>';
+  html += '</div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+  html += '<div><div style="font-weight:700;font-size:14px">Suara Beep</div><div style="font-size:11.5px;color:var(--muted)">Dring pas timer kelar</div></div>';
+  html += '<button id="pref-sound" class="chip'+(state.prefs.soundOn?' active':'')+'" style="min-width:70px;text-align:center">'+(state.prefs.soundOn?'ON':'OFF')+'</button>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="card">';
+  html += '<div class="section-title">Data</div>';
+  html += '<div class="muted mb">Backup semua data gym (program custom, library, history).</div>';
+  html += '<button class="btn-ghost" id="btn-export-gym">📥 Export Backup (JSON)</button>';
+  html += '<button class="btn-ghost" id="btn-import-gym">📤 Import Backup</button>';
+  html += '<button class="btn-danger" id="btn-reset-gym">🗑 Reset Semua Data Gym</button>';
+  html += '<input type="file" id="file-import-gym" accept="application/json" style="display:none">';
+  html += '</div>';
+
+  html += '<div class="card">';
+  html += '<div class="section-title">Info</div>';
+  html += '<div class="muted">Total gerakan: '+state.exercises.length+'<br>Total sesi tercatat: '+Object.keys(state.history).length+'<br>Penyimpanan: Cloudflare KV + localStorage</div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+/* ============================================================
+   TIMER BAR (STICKY)
+   ============================================================ */
+var timer = { running:false, startAt:0, target:120, beeped:false, intervalId:null, elapsed:0 };
+
+function ensureTimerBar(){
+  var bar = document.getElementById('timer-bar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'timer-bar';
+    bar.className = 'timer-bar';
+    bar.style.display = 'none';
+    bar.innerHTML = ''+
+      '<div class="timer-main green" id="timer-main">'+
+      '  <div class="tm-info">'+
+      '    <div class="tm-label">Istirahat</div>'+
+      '    <div class="tm-time" id="timer-time">00:00</div>'+
+      '    <div class="tm-hint green" id="timer-hint">Tap buat mulai</div>'+
+      '  </div>'+
+      '</div>'+
+      '<div class="timer-presets" id="timer-presets">'+
+      '  <button data-preset="60">60</button>'+
+      '  <button data-preset="90">90</button>'+
+      '  <button data-preset="120" class="active">120</button>'+
+      '  <button data-preset="150">150</button>'+
+      '</div>';
+    document.body.appendChild(bar);
+    bindTimerEvents();
+  }
+  return bar;
+}
+
+function bindTimerEvents(){
+  var main = document.getElementById('timer-main');
+  if(!main) return;
+  main.addEventListener('click', function(){
+    if(timer.running){ resetTimer(); }
+    else { startTimer(); }
+  });
+  var presets = document.getElementById('timer-presets');
+  presets.addEventListener('click', function(e){
+    var b = e.target.closest('[data-preset]');
+    if(!b) return;
+    var val = parseInt(b.dataset.preset);
+    timer.target = val;
+    var allBtn = presets.querySelectorAll('button');
+    for(var i=0;i<allBtn.length;i++) allBtn[i].classList.toggle('active', allBtn[i]===b);
+    if(timer.running) resetTimer();
+    else updateTimerBar();
+  });
+}
+
+function updateTimerBarVisibility(){
+  var bar = ensureTimerBar();
+  bar.style.display = state.liveWorkout ? 'flex' : 'none';
+}
+
+function startTimer(){
+  if(!state.liveWorkout) return;
+  timer.running = true;
+  timer.startAt = Date.now();
+  timer.beeped = false;
+  timer.elapsed = 0;
+  if(!timer.target) timer.target = state.prefs.restDefault || 120;
+  clearInterval(timer.intervalId);
+  timer.intervalId = setInterval(tickTimer, 100);
+  updateTimerBar();
+}
+function resetTimer(){
+  timer.running = false;
+  timer.elapsed = 0;
+  timer.beeped = false;
+  clearInterval(timer.intervalId);
+  timer.intervalId = null;
+  updateTimerBar();
+}
+function tickTimer(){
+  if(!timer.running) return;
+  timer.elapsed = Math.floor((Date.now() - timer.startAt) / 1000);
+  if(!timer.beeped && timer.elapsed >= timer.target){
+    timer.beeped = true;
+    playBeep();
+    vibrate([200,100,200,100,200]);
+  }
+  updateTimerBar();
+}
+function updateTimerBar(){
+  var main = document.getElementById('timer-main');
+  var timeEl = document.getElementById('timer-time');
+  var hintEl = document.getElementById('timer-hint');
+  if(!main) return;
+  var sec = timer.elapsed || 0;
+  var zone = 'green';
+  var hint = 'Fase istirahat standar';
+  if(timer.running){
+    if(sec < 60){ zone='green'; hint='Masih fresh, jangan kelamaan'; }
+    else if(sec < 90){ zone='orange'; hint='Mulai masuk zona produktif'; }
+    else if(sec < timer.target || !timer.beeped){ zone='red'; hint='Hampir siap, siap-siap angkat'; }
+    else { zone='red'; hint='⚠️ Waktunya mulai set berikutnya!'; }
+    if(timer.beeped && sec >= timer.target){ zone='red'; }
+  } else {
+    hint = 'Tap buat mulai';
+  }
+  main.className = 'timer-main ' + zone;
+  timeEl.textContent = formatMMSS(sec);
+  hintEl.className = 'tm-hint ' + zone;
+  hintEl.textContent = hint;
+}
+
+/* ============================================================
+   SHEET: SET INPUT
+   ============================================================ */
+function openSetSheet(exId){
+  var ex = getEx(exId);
+  if(!ex) return;
+  var lw = state.liveWorkout;
+  var prevSets = lw.sets.filter(function(s){ return s.exerciseId === exId && !s.warmup; });
+  var lastSet = prevSets[prevSets.length-1];
+  var defaultWeight = lastSet ? lastSet.beban : 0;
+  var defaultRep = ex.repMax;
+
+  // also look at last historical session
+  if(prevSets.length === 0){
+    var last = getLastHistoryForExercise(exId);
+    if(last && last.sets.length){
+      defaultWeight = last.sets[0].beban;
+      defaultRep = last.sets[0].rep;
+    }
+  }
+
+  var html = '';
+  html += '<div class="set-input-group">';
+  html += '<label>Beban (kg)</label>';
+  html += '<div class="set-input-stepper">';
+  html += '<button data-step="w-">−</button>';
+  html += '<div class="siv" id="siv-beban">'+fmt(defaultWeight)+'<small>kg</small></div>';
+  html += '<button data-step="w+">+</button>';
+  html += '</div>';
+  html += '<div class="set-presets">';
+  [defaultWeight, defaultWeight+ex.increment, defaultWeight+ex.increment*2, defaultWeight-ex.increment].forEach(function(v){
+    if(v <= 0) return;
+    html += '<button data-w="'+v+'">'+fmt(v)+'</button>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="set-input-group">';
+  html += '<label>Repetisi</label>';
+  html += '<div class="set-input-stepper">';
+  html += '<button data-step="r-">−</button>';
+  html += '<div class="siv" id="siv-rep">'+defaultRep+'</div>';
+  html += '<button data-step="r+">+</button>';
+  html += '</div>';
+  html += '<div class="set-presets">';
+  [ex.repMin, Math.round((ex.repMin+ex.repMax)/2), ex.repMax].forEach(function(v){
+    html += '<button data-r="'+v+'">'+v+'</button>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="set-input-group">';
+  html += '<label>RIR (Rep in Reserve)</label>';
+  html += '<div class="rir-row" id="rir-row">';
+  [0,1,2,3,4,5].forEach(function(v){
+    html += '<button data-rir="'+v+'"'+(v===2?' class="active"':'')+'>'+v+'</button>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="set-input-group">';
+  html += '<div class="warmup-row" id="warmup-row">';
+  html += '<div class="wr-check">✓</div>';
+  html += '<div class="wr-label">Tandai sebagai Warm-up (nggak masuk volume)</div>';
+  html += '</div></div>';
+
+  html += '<button class="btn-add" id="btn-save-set" style="margin-top:16px">Simpan Set</button>';
+
+  openSheet(ex.nama, html);
+
+  // Setup state
+  var sBeban = defaultWeight;
+  var sRep = defaultRep;
+  var sRIR = 2;
+  var sWarmup = false;
+
+  var bebanEl = document.getElementById('siv-beban');
+  var repEl = document.getElementById('siv-rep');
+  var warmupEl = document.getElementById('warmup-row');
+  var rirRow = document.getElementById('rir-row');
+
+  function refreshBeban(){ bebanEl.innerHTML = fmt(sBeban)+'<small>kg</small>'; }
+  function refreshRep(){ repEl.textContent = sRep; }
+
+  document.getElementById('sheet-body').addEventListener('click', function handler(e){
+    var t = e.target.closest('[data-step],[data-w],[data-r],[data-rir]');
+    if(!t) return;
+    if(t.dataset.step === 'w-'){ sBeban = Math.max(0, sBeban - (ex.increment||2.5)); refreshBeban(); }
+    else if(t.dataset.step === 'w+'){ sBeban += (ex.increment||2.5); refreshBeban(); }
+    else if(t.dataset.step === 'r-'){ sRep = Math.max(1, sRep - 1); refreshRep(); }
+    else if(t.dataset.step === 'r+'){ sRep = sRep + 1; refreshRep(); }
+    else if(t.dataset.w){ sBeban = num(t.dataset.w); refreshBeban(); }
+    else if(t.dataset.r){ sRep = parseInt(t.dataset.r); refreshRep(); }
+    else if(t.dataset.rir != null){
+      sRIR = parseInt(t.dataset.rir);
+      var btns = rirRow.querySelectorAll('button');
+      for(var i=0;i<btns.length;i++) btns[i].classList.toggle('active', btns[i]===t);
+    }
+  });
+
+  warmupEl.addEventListener('click', function(){
+    sWarmup = !sWarmup;
+    warmupEl.classList.toggle('on', sWarmup);
+  });
+
+  document.getElementById('btn-save-set').addEventListener('click', function(){
+    lw.sets.push({
+      exerciseId: exId,
+      exerciseName: ex.nama,
+      beban: sBeban,
+      rep: sRep,
+      rir: sWarmup ? null : sRIR,
+      warmup: sWarmup
+    });
+    save();
+    closeSheet();
+    renderLive();
+    updateTimerBarVisibility();
+    if(!sWarmup && state.prefs.autoStartRest){ startTimer(); }
+    else if(!sWarmup){ toast('Set '+ (lw.sets.filter(function(s){return s.exerciseId===exId && !s.warmup;}).length) +' kesimpen'); }
+  });
+}
+
+function getLastHistoryForExercise(exId){
+  var dates = Object.keys(state.history).sort().reverse();
+  for(var i=0;i<dates.length;i++){
+    var w = state.history[dates[i]];
+    var sets = w.sets.filter(function(s){ return s.exerciseId === exId && !s.warmup; });
+    if(sets.length) return { date:dates[i], sets:sets, workout:w };
+  }
+  return null;
+}
+
+/* ============================================================
+   SHEET: EXERCISE EDIT
+   ============================================================ */
+function openExEditSheet(exId){
+  var isNew = !exId;
+  var ex = isNew ? { id:uid(), nama:'', muscle:'chest', muscleLabel:'Chest', equipment:'barbell', compound:true, tier:'B', repMin:8, repMax:12, increment:2.5, note:'' } : getEx(exId);
+  if(!ex) return;
+
+  var muscles = [['chest','Chest'],['back','Back'],['shoulder','Shoulder'],['biceps','Biceps'],['triceps','Triceps'],['quads','Quads'],['hams','Hams'],['glutes','Glutes'],['calves','Calves'],['core','Core'],['traps','Traps'],['forearm','Forearm']];
+  var equipments = ['barbell','dumbbell','cable','machine','bodyweight'];
+  var tiers = ['S','A','B','C'];
+
+  var html = '';
+  html += '<div class="form">';
+  html += '<label>Nama</label>';
+  html += '<input id="ex-nama" value="'+esc(ex.nama)+'" placeholder="Nama gerakan">';
+  html += '<label>Muscle Group</label>';
+  html += '<select id="ex-muscle" style="background:var(--card2);border:1px solid var(--line);color:var(--text);padding:11px 13px;border-radius:10px;font-size:14.5px;font-family:inherit">';
+  muscles.forEach(function(m){ html += '<option value="'+m[0]+'"'+(ex.muscle===m[0]?' selected':'')+'>'+m[1]+'</option>'; });
+  html += '</select>';
+  html += '<label>Equipment</label>';
+  html += '<select id="ex-equip" style="background:var(--card2);border:1px solid var(--line);color:var(--text);padding:11px 13px;border-radius:10px;font-size:14.5px;font-family:inherit">';
+  equipments.forEach(function(eq){ html += '<option value="'+eq+'"'+(ex.equipment===eq?' selected':'')+'>'+eq+'</option>'; });
+  html += '</select>';
+  html += '<label>Tier (S = terbaik, C = kurang optimal)</label>';
+  html += '<div class="filter-row">';
+  tiers.forEach(function(t){ html += '<button class="chip'+(ex.tier===t?' active':'')+'" data-tier="'+t+'">'+t+'</button>'; });
+  html += '</div>';
+  html += '<label>Target Rep (min-max)</label>';
+  html += '<div class="grid-3"><input id="ex-repmin" type="number" value="'+ex.repMin+'"><input id="ex-repmax" type="number" value="'+ex.repMax+'"><input id="ex-incr" type="number" step="0.5" value="'+ex.increment+'" placeholder="Increment kg"></div>';
+  html += '<label>Catatan (opsional)</label>';
+  html += '<input id="ex-note" value="'+esc(ex.note||'')+'" placeholder="Tips teknik...">';
+  html += '<button class="btn-add" id="btn-save-ex" style="margin-top:16px">'+ (isNew?'Tambah Gerakan':'Simpan Perubahan') +'</button>';
+  if(!isNew){ html += '<button class="btn-danger" id="btn-del-ex" style="margin-top:10px;text-align:center">Hapus Gerakan</button>'; }
+  html += '</div>';
+
+  openSheet(isNew ? 'Gerakan Baru' : ex.nama, html);
+
+  var selectedTier = ex.tier;
+  var tierRow = document.querySelector('.filter-row [data-tier]').parentElement;
+  tierRow.addEventListener('click', function(e){
+    var b = e.target.closest('[data-tier]');
+    if(!b) return;
+    selectedTier = b.dataset.tier;
+    tierRow.querySelectorAll('[data-tier]').forEach(function(x){ x.classList.toggle('active', x===b); });
+  });
+
+  document.getElementById('btn-save-ex').addEventListener('click', function(){
+    var nama = document.getElementById('ex-nama').value.trim();
+    if(!nama){ alert('Isi nama gerakan'); return; }
+    var muscleVal = document.getElementById('ex-muscle').value;
+    var mLabel = muscles.filter(function(m){return m[0]===muscleVal;})[0][1];
+    var updated = {
+      id: ex.id,
+      nama: nama,
+      muscle: muscleVal,
+      muscleLabel: mLabel,
+      equipment: document.getElementById('ex-equip').value,
+      compound: ex.compound,
+      tier: selectedTier,
+      repMin: num(document.getElementById('ex-repmin').value) || 8,
+      repMax: num(document.getElementById('ex-repmax').value) || 12,
+      increment: num(document.getElementById('ex-incr').value) || 2.5,
+      note: document.getElementById('ex-note').value
+    };
+    if(isNew){ state.exercises.push(updated); }
+    else {
+      for(var i=0;i<state.exercises.length;i++){ if(state.exercises[i].id===ex.id){ state.exercises[i] = updated; break; } }
+    }
+    save();
+    closeSheet();
+    renderLibrary();
+    toast(isNew ? 'Gerakan ditambah' : 'Gerakan diupdate');
+  });
+
+  if(!isNew){
+    document.getElementById('btn-del-ex').addEventListener('click', function(){
+      openModal('Hapus Gerakan', 'Yakin hapus "'+ex.nama+'"? Data set yang udah kecatat nggak akan kehapus, tapi gerakan nggak bisa dipakai lagi buat sesi baru.', 'Hapus', function(){
+        state.exercises = state.exercises.filter(function(x){ return x.id !== ex.id; });
+        save();
+        closeSheet();
+        renderLibrary();
+        toast('Gerakan dihapus');
+      });
+    });
+  }
+}
+
+/* ============================================================
+   START / FINISH WORKOUT
+   ============================================================ */
+function startSession(){
+  var picks = viewParams.picks || [];
+  if(picks.length === 0){ toast('Pilih minimal 1 gerakan'); return; }
+  state.liveWorkout = {
+    programId: viewParams.programId,
+    sessionId: viewParams.sessionId,
+    sessionName: findSession(viewParams.programId, viewParams.sessionId).nama,
+    startTime: Date.now(),
+    exercises: picks.slice(),
+    sets: [],
+    notes: ''
+  };
+  save();
+  switchView('live');
+  requestWakeLock();
+  // Init audio context (butuh user gesture)
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+}
+
+function finishLive(){
+  var lw = state.liveWorkout;
+  if(!lw) return;
+  var totalVol = lw.sets.filter(function(s){ return !s.warmup; }).reduce(function(a,s){ return a+(s.beban||0)*(s.rep||0); }, 0);
+  var workout = {
+    programId: lw.programId,
+    sessionId: lw.sessionId,
+    sessionName: lw.sessionName,
+    startTime: lw.startTime,
+    endTime: Date.now(),
+    duration: Date.now() - lw.startTime,
+    exercises: lw.exercises.slice(),
+    sets: lw.sets.slice(),
+    totalVolume: totalVol,
+    notes: ''
+  };
+  var date = todayISO();
+  if(state.history[date] && state.history[date].sessionId === lw.sessionId){
+    if(!confirm('Sudah ada log '+lw.sessionName+' tanggal ini. Timpa?')) return;
+  }
+  state.history[date] = workout;
+  state.liveWorkout = null;
+  save();
+  resetTimer();
+  releaseWakeLock();
+  updateTimerBarVisibility();
+  switchView('riwayat');
+  toast('✓ Sesi kelar: '+fmt(totalVol)+' kg total volume');
+}
+
+function cancelLive(){
+  openModal('Batalkan Sesi', 'Yakin batalkan? Semua set yang udah di-log bakal hilang.', 'Batalkan', function(){
+    state.liveWorkout = null;
+    save();
+    resetTimer();
+    releaseWakeLock();
+    updateTimerBarVisibility();
+    switchView('home');
+    toast('Sesi dibatalkan');
+  });
+}
+
+/* ============================================================
+   ADD EXERCISE FROM LIVE
+   ============================================================ */
+function openAddExFromLive(){
+  var lw = state.liveWorkout;
+  if(!lw) return;
+  var q = '';
+  var html = '<input class="search-input" id="live-ex-search" placeholder="Cari gerakan...">';
+  html += '<div id="live-ex-list"></div>';
+  openSheet('Tambah Gerakan', html);
+
+  function renderList(){
+    var ql = q.toLowerCase();
+    var cont = document.getElementById('live-ex-list');
+    if(!cont) return;
+    var html2 = '';
+    var list = state.exercises.filter(function(ex){
+      if(lw.exercises.indexOf(ex.id) !== -1) return false;
+      if(ql && ex.nama.toLowerCase().indexOf(ql) === -1) return false;
+      return true;
+    }).slice(0, 40);
+    if(list.length === 0){
+      cont.innerHTML = '<div class="empty">Nggak ada yang cocok.</div>';
+      return;
+    }
+    list.forEach(function(ex){
+      html2 += '<div class="pick-item" data-act="live-add-ex" data-id="'+ex.id+'">';
+      html2 += '<div class="pi-body"><div class="pi-name">'+esc(ex.nama)+' <span class="tier tier-'+ex.tier+'">'+ex.tier+'</span></div>';
+      html2 += '<div class="pi-meta"><span class="musc musc-'+ex.muscle+'">'+esc(ex.muscleLabel)+'</span> · '+esc(ex.equipment)+'</div></div>';
+      html2 += '<div class="pi-plus">+</div></div>';
+    });
+    cont.innerHTML = html2;
+  }
+  renderList();
+
+  var searchEl = document.getElementById('live-ex-search');
+  searchEl.addEventListener('input', function(e){ q = e.target.value; renderList(); });
+}
+
+/* ============================================================
+   GLOBAL EVENT HANDLER
+   ============================================================ */
+document.addEventListener('click', function(e){
+  var t = e.target;
+
+  // Sidebar & topbar
+  if(t.id === 'menu-btn'){ toggleSidebar(); return; }
+  if(t.id === 'sidebar-overlay'){ closeSidebar(); return; }
+  var nav = t.closest('.sidebar-nav button[data-view]');
+  if(nav){ switchView(nav.dataset.view); return; }
+
+  // Sheet & modal
+  if(t.id === 'sheet-close' || t.id === 'sheet'){ closeSheet(); return; }
+  if(t.id === 'modal-cancel'){ closeModal(); return; }
+  if(t.id === 'modal-confirm'){ if(modalCb) modalCb(); closeModal(); return; }
+  if(t.id === 'modal-bd'){ closeModal(); return; }
+
+  // Home actions
+  if(t.dataset.act === 'pick-program'){
+    state.activeProgramId = t.dataset.id;
+    save();
+    renderHome();
+    return;
+  }
+  if(t.dataset.act === 'change-program'){
+    openModal('Ganti Program', 'Program aktif bakal diganti. History tetap aman.', 'Ganti', function(){
+      state.activeProgramId = null;
+      save();
+      renderHome();
+    });
+    return;
+  }
+  if(t.dataset.act === 'open-sesi'){
+    var progId = t.dataset.prog;
+    var sesiId = t.dataset.sesi;
+    if(state.liveWorkout && state.liveWorkout.sessionId === sesiId){
+      switchView('live');
+      return;
+    }
+    if(state.liveWorkout){
+      openModal('Ada Sesi Aktif', 'Lu masih ada sesi yang belum kelar. Batalkan dulu buat mulai yang baru.', 'OK', function(){});
+      return;
+    }
+    switchView('sesi', { programId: progId, sessionId: sesiId, picks: null });
+    return;
+  }
+  if(t.dataset.act === 'go-riwayat'){ switchView('riwayat'); return; }
+  if(t.dataset.act === 'resume-live'){ switchView('live'); return; }
+
+  // Sesi actions
+  if(t.dataset.act === 'filter-musc'){
+    sesiFilterMuscle = t.dataset.m;
+    viewParams._keepPicks = viewParams.picks;
+    renderSesi();
+    return;
+  }
+  if(t.dataset.act === 'pick'){
+    var id = t.dataset.id;
+    if(viewParams.picks.indexOf(id) === -1) viewParams.picks.push(id);
+    renderSesi();
+    return;
+  }
+  if(t.dataset.act === 'unpick'){
+    viewParams.picks = viewParams.picks.filter(function(x){ return x !== t.dataset.id; });
+    renderSesi();
+    return;
+  }
+  if(t.dataset.act === 'move-up'){
+    var i = parseInt(t.dataset.idx);
+    if(i > 0){
+      var arr = viewParams.picks;
+      var tmp = arr[i-1]; arr[i-1] = arr[i]; arr[i] = tmp;
+      renderSesi();
+    }
+    return;
+  }
+  if(t.dataset.act === 'move-down'){
+    var j = parseInt(t.dataset.idx);
+    var arr2 = viewParams.picks;
+    if(j < arr2.length-1){
+      var tmp2 = arr2[j+1]; arr2[j+1] = arr2[j]; arr2[j] = tmp2;
+      renderSesi();
+    }
+    return;
+  }
+  if(t.dataset.act === 'save-default'){
+    state.sessionDrafts[viewParams.sessionId] = viewParams.picks.slice();
+    save();
+    toast('Default sesi disimpen');
+    return;
+  }
+  if(t.dataset.act === 'start-session'){ startSession(); return; }
+
+  // Live workout
+  if(t.dataset.act === 'add-set'){
+    openSetSheet(t.dataset.id);
+    return;
+  }
+  if(t.dataset.act === 'del-set'){
+    var idx = parseInt(t.dataset.idx);
+    state.liveWorkout.sets.splice(idx, 1);
+    save();
+    renderLive();
+    return;
+  }
+  if(t.dataset.act === 'add-ex-live'){ openAddExFromLive(); return; }
+  if(t.dataset.act === 'live-add-ex'){
+    state.liveWorkout.exercises.push(t.dataset.id);
+    save();
+    closeSheet();
+    renderLive();
+    return;
+  }
+  if(t.dataset.act === 'finish-live'){ finishLive(); return; }
+  if(t.dataset.act === 'cancel-live'){ cancelLive(); return; }
+
+  // Riwayat
+  if(t.dataset.act === 'open-detail'){
+    switchView('detail', { date: t.dataset.date });
+    return;
+  }
+
+  // Library
+  if(t.dataset.act === 'lib-filter'){
+    libFilterMuscle = t.dataset.m;
+    renderLibrary();
+    return;
+  }
+  if(t.dataset.act === 'edit-ex'){ openExEditSheet(t.dataset.id); return; }
+  if(t.dataset.act === 'new-ex'){ openExEditSheet(null); return; }
+
+  // Setting
+  if(t.id === 'pref-wake'){
+    state.prefs.wakeLock = !state.prefs.wakeLock;
+    save();
+    if(state.prefs.wakeLock && state.liveWorkout) requestWakeLock();
+    else if(!state.prefs.wakeLock) releaseWakeLock();
+    renderSetting();
+    return;
+  }
+  if(t.id === 'pref-sound'){
+    state.prefs.soundOn = !state.prefs.soundOn;
+    save();
+    renderSetting();
+    return;
+  }
+  if(t.id === 'btn-export-gym'){
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'tracker-gym-'+todayISO()+'.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Backup diunduh');
+    return;
+  }
+  if(t.id === 'btn-import-gym'){ document.getElementById('file-import-gym').click(); return; }
+  if(t.id === 'btn-reset-gym'){
+    openModal('Reset Data Gym', 'Semua program custom, library edit, dan history bakal hilang. Yakin?', 'Reset', function(){
+      state = defaultState();
+      save();
+      switchView('home');
+      toast('Data gym direset');
+    });
+    return;
+  }
+});
+
+/* ---------- INPUT HANDLER ---------- */
+document.addEventListener('input', function(e){
+  var t = e.target;
+  if(t.id === 'sesi-search'){ sesiSearch = t.value; renderSesi(); return; }
+  if(t.id === 'lib-search'){ libSearch = t.value; renderLibrary(); return; }
+});
+
+/* ---------- CHANGE HANDLER ---------- */
+document.addEventListener('change', function(e){
+  var t = e.target;
+  if(t.id === 'pref-rest'){
+    var v = num(t.value);
+    if(v > 0){ state.prefs.restDefault = v; save(); }
+    return;
+  }
+  if(t.id === 'file-import-gym'){
+    var f = t.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var s = JSON.parse(reader.result);
+        if(!s.exercises || !s.history || !s.prefs) throw new Error('format');
+        openModal('Import Backup', 'Ganti semua data gym dengan file ini?', 'Import', function(){
+          state = s;
+          save();
+          switchView('home');
+          toast('Data gym diimport');
+        });
+      }catch(err){ alert('File backup nggak valid.'); }
+      t.value = '';
+    };
+    reader.readAsText(f);
+    return;
+  }
+});
+
+/* ---------- LIVE CLOCK UPDATER ---------- */
+setInterval(function(){
+  if(state.liveWorkout && currentView === 'live'){
+    var clock = document.getElementById('live-clock');
+    if(clock){
+      clock.textContent = formatDurasi(Date.now() - state.liveWorkout.startTime);
+    }
+  }
+}, 1000);
+
+/* ---------- INIT ---------- */
+async function initApp(){
+  var local = loadLocal();
+  var cloud = await loadFromCloud();
+
+  if(cloud && local){
+    state = (cloud.lastModified||0) >= (local.lastModified||0) ? cloud : local;
+  } else if(cloud){
+    state = cloud;
+  } else if(local){
+    state = local;
+    pushToCloud();
+  } else {
+    state = defaultState();
+    pushToCloud();
+  }
+
+  // Ensure exercises exist (migration kalau ada yang baru)
+  if(!state.exercises || !state.exercises.length) state.exercises = LIBRARY.slice();
+  if(!state.prefs) state.prefs = {restDefault:120, wakeLock:true, autoStartRest:false, soundOn:true};
+
+  ensureTimerBar();
+  switchView('home');
+  setSyncStatus(cloud ? 'ok' : 'syncing');
+}
+
+window.addEventListener('beforeunload', function(){
+  if(saveTimer){
+    clearTimeout(saveTimer);
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+  }
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+  });
+}
+
+initApp();
+
+})();
+</script>
+</body>
+</html>
