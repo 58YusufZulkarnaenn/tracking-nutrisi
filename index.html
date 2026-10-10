@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Fitness App</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0e1116;--card:#171d26;--card2:#1f2733;--line:#2b3543;
+  --text:#e6edf3;--muted:#8b98a8;--accent:#3ddc97;--blue:#4aa8ff;
+  --warn:#ffb454;--danger:#ff6b6b;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  min-height:100dvh;
+  display:flex;flex-direction:column;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit}
+
+.wrap{
+  flex:1 1 auto;
+  display:flex;flex-direction:column;
+  padding:40px 20px 30px;
+  padding-top:calc(40px + env(safe-area-inset-top));
+  padding-bottom:calc(30px + env(safe-area-inset-bottom));
+  max-width:600px;
+  width:100%;
+  margin:0 auto;
+}
+
+.brand{
+  text-align:center;
+  margin-bottom:36px;
+  flex-shrink:0;
+}
+.brand .logo{
+  font-size:56px;
+  line-height:1;
+  margin-bottom:12px;
+  display:block;
+}
+.brand h1{
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:-.5px;
+  margin-bottom:6px;
+}
+.brand p{
+  color:var(--muted);
+  font-size:13.5px;
+}
+
+.menu-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  flex:1 1 auto;
+  justify-content:center;
+}
+
+.menu-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:22px 20px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  cursor:pointer;
+  transition:transform .15s, border-color .15s, box-shadow .15s;
+  position:relative;
+  overflow:hidden;
+}
+.menu-card:active{transform:scale(.98)}
+.menu-card:hover{
+  border-color:var(--accent);
+  box-shadow:0 8px 30px rgba(61,220,151,.08);
+}
+.menu-card .mc-icon{
+  width:56px;height:56px;
+  border-radius:14px;
+  background:var(--card2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;
+  flex-shrink:0;
+}
+.menu-card.mc-makan .mc-icon{background:rgba(74,168,255,.12)}
+.menu-card.mc-gym .mc-icon{background:rgba(61,220,151,.12)}
+.menu-card.mc-assist .mc-icon{background:rgba(255,180,84,.12)}
+
+.menu-card .mc-body{flex:1;min-width:0}
+.menu-card .mc-title{
+  font-size:17px;
+  font-weight:700;
+  margin-bottom:3px;
+}
+.menu-card .mc-sub{
+  font-size:12.5px;
+  color:var(--muted);
+  line-height:1.35;
+}
+.menu-card .mc-arrow{
+  color:var(--muted);
+  font-size:20px;
+  flex-shrink:0;
+  transition:transform .15s, color .15s;
+}
+.menu-card:hover .mc-arrow{
+  color:var(--accent);
+  transform:translateX(4px);
+}
+
+.foot{
+  flex-shrink:0;
+  text-align:center;
+  color:var(--muted);
+  font-size:11.5px;
+  margin-top:30px;
+}
+.foot span{display:block;margin-top:2px;opacity:.7}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="brand">
+    <span class="logo">💪</span>
+    <h1>Fitness App</h1>
+    <p>Pilih modul yang mau lu buka</p>
+  </div>
+
+  <div class="menu-list">
+
+    <a class="menu-card mc-makan" href="/makanan.html">
+      <div class="mc-icon">🍽️</div>
+      <div class="mc-body">
+        <div class="mc-title">Tracker Makan</div>
+        <div class="mc-sub">Kalori harian, protein, basis bahan</div>
+      </div>
+      <div class="mc-arrow">›</div>
+    </a>
+
+    <a class="menu-card mc-gym" href="/gym.html">
+      <div class="mc-icon">🏋️</div>
+      <div class="mc-body">
+        <div class="mc-title">Tracker Gym</div>
+        <div class="mc-sub">Program, live workout, timer istirahat, history</div>
+      </div>
+      <div class="mc-arrow">›</div>
+    </a>
+
+    <a class="menu-card mc-assist" href="/assistant.html">
+      <div class="mc-icon">🧠</div>
+      <div class="mc-body">
+        <div class="mc-title">Smart Assistant</div>
+        <div class="mc-sub">Pengingat jadwal harian & rutinitas</div>
+      </div>
+      <div class="mc-arrow">›</div>
+    </a>
+
+  </div>
+
+  <div class="foot">
+    Personal build · v1.0
+    <span>User pertama: gua sendiri</span>
+  </div>
+
+</div>
+
+</body>
+</html>
