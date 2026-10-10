@@ -1667,6 +1667,7 @@ function openSetSheet(exId){
       var btns = rirRow.querySelectorAll('button');
       for(var i=0;i<btns.length;i++) btns[i].classList.toggle('active', btns[i]===t);
     }
+  });
 
   warmupEl.addEventListener('click', function(){
     sWarmup = !sWarmup;
