@@ -1241,13 +1241,16 @@ function getAutoRegHint(exId, lw){
   if(!ex) return null;
   var workingSets = lw.sets.filter(function(s){ return s.exerciseId===exId && !s.warmup; });
   if(workingSets.length === 0) return null;
-  // All sets reached repMax AND last RIR >= 2
   var allMaxed = workingSets.every(function(s){ return s.rep >= ex.repMax; });
-  var lastRIR = workingSets[workingSets.length-1].rir;
   if(!allMaxed) return null;
-  if(lastRIR == null || lastRIR < 2) return null;
-  var lastWeight = workingSets[workingSets.length-1].beban || 0;
+  var lastSet = workingSets[workingSets.length-1];
+  var lastRIR = lastSet.rir;
+  var lastWeight = lastSet.beban || 0;
   var next = lastWeight + (ex.increment || 2.5);
+  if(lastRIR == null){
+    return 'Semua set mentok '+ex.repMax+' rep. Kalau ngerasa masih kuat, coba naik ke '+fmt(next)+' kg minggu depan.';
+  }
+  if(lastRIR < 2) return null;
   return 'Semua set mentok '+ex.repMax+' rep, RIR ≥ 2. Coba naik ke '+fmt(next)+' kg minggu depan.';
 }
 
