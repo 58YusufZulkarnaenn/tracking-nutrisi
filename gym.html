@@ -1615,13 +1615,16 @@ function openSetSheet(exId){
   });
   html += '</div></div>';
 
-  html += '<div class="set-input-group">';
-  html += '<label>RIR (Rep in Reserve)</label>';
+    html += '<div class="set-input-group">';
+  html += '<label>RIR (Rep in Reserve) — Opsional</label>';
   html += '<div class="rir-row" id="rir-row">';
+  html += '<button data-rir="skip" class="active">Nggak tau</button>';
   [0,1,2,3,4,5].forEach(function(v){
-    html += '<button data-rir="'+v+'"'+(v===2?' class="active"':'')+'>'+v+'</button>';
+    html += '<button data-rir="'+v+'">'+v+'</button>';
   });
-  html += '</div></div>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">RIR = sisa rep yang masih bisa lu lakuin. <b>0</b> = mentok banget, <b>2</b> = masih bisa 2 rep lagi. Ragu? Pilih <b>Nggak tau</b> aja, tetep kesimpen kok.</div>';
+  html += '</div>';
 
   html += '<div class="set-input-group">';
   html += '<div class="warmup-row" id="warmup-row">';
