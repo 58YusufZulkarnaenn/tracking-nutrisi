@@ -1660,11 +1660,10 @@ function openSetSheet(exId){
     else if(t.dataset.w){ sBeban = num(t.dataset.w); refreshBeban(); }
     else if(t.dataset.r){ sRep = parseInt(t.dataset.r); refreshRep(); }
     else if(t.dataset.rir != null){
-      sRIR = parseInt(t.dataset.rir);
+      sRIR = t.dataset.rir === 'skip' ? null : parseInt(t.dataset.rir);
       var btns = rirRow.querySelectorAll('button');
       for(var i=0;i<btns.length;i++) btns[i].classList.toggle('active', btns[i]===t);
     }
-  });
 
   warmupEl.addEventListener('click', function(){
     sWarmup = !sWarmup;
